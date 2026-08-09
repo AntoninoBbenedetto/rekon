@@ -3,6 +3,9 @@
 use App\Modules\SharedKernel\Domain\Currency;
 use App\Modules\SharedKernel\Domain\IdempotencyKey;
 use App\Modules\SharedKernel\Domain\TransactionId;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 it('derives the same TransactionId from the same IdempotencyKey', function () {
     $key = IdempotencyKey::forStatementRow('REF-1', 12345, Currency::EUR, new DateTimeImmutable('2026-07-31'), 0);
