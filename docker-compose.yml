@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rekon_app
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - rekon
+    tty: true
+
+  postgres:
+    image: postgres:16
+    container_name: rekon_postgres
+    environment:
+      POSTGRES_USER: rekon
+      POSTGRES_PASSWORD: rekon
+      POSTGRES_DB: rekon
+    volumes:
+      - rekon_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
+    networks:
+      - rekon
+
+  redis:
+    image: redis:7-alpine
+    container_name: rekon_redis
+    networks:
+      - rekon
+
+networks:
+  rekon:
+    name: rekon_network
+
+volumes:
+  rekon_postgres_data:
