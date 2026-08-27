@@ -3,6 +3,11 @@
 namespace App\Modules\Reconciliation\Domain;
 
 use App\Modules\Reconciliation\Domain\Events\TransactionImported;
+use App\Modules\Reconciliation\Domain\Events\TransactionMarkedAmbiguous;
+use App\Modules\Reconciliation\Domain\Events\TransactionMarkedUnmatched;
+use App\Modules\Reconciliation\Domain\Events\TransactionMatched;
+use App\Modules\Reconciliation\Domain\Events\TransactionReconciled;
+use App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition;
 use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\AggregateRoot;
 use App\Modules\SharedKernel\Domain\DomainEvent;
@@ -20,6 +25,9 @@ final class Transaction extends AggregateRoot
     private string $reference;
     private DateTimeImmutable $statementDate;
     private DateTimeImmutable $importedAt;
+    private ?string $matchedExpectedPaymentId = null;
+    /** @var string[] */
+    private array $candidateExpectedPaymentIds = [];
 
     public static function import(
         TransactionId $id,
@@ -53,6 +61,45 @@ final class Transaction extends AggregateRoot
         return $transaction;
     }
 
+    public function markMatched(string $expectedPaymentId, Actor $actor, string $causationId, string $correlationId): void
+    {
+        $this->assertState(TransactionState::Pending);
+
+        $this->record(new TransactionMatched(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            expectedPaymentId: $expectedPaymentId,
+            matchType: 'exact',
+        ));
+
+        $this->record(new TransactionReconciled(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            expectedPaymentId: $expectedPaymentId,
+            resolution: 'auto',
+        ));
+    }
+
+    public function markUnmatched(Actor $actor, string $causationId, string $correlationId): void
+    {
+        $this->assertState(TransactionState::Pending);
+
+        $this->record(new TransactionMarkedUnmatched(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            reason: 'no_candidate_found',
+        ));
+    }
+
+    /** @param string[] $candidateExpectedPaymentIds */
+    public function markAmbiguous(array $candidateExpectedPaymentIds, string $reason, Actor $actor, string $causationId, string $correlationId): void
+    {
+        $this->assertState(TransactionState::Pending);
+
+        $this->record(new TransactionMarkedAmbiguous(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            candidateExpectedPaymentIds: $candidateExpectedPaymentIds,
+            reason: $reason,
+        ));
+    }
+
     public function aggregateId(): string
     {
         return $this->id;
@@ -83,10 +130,25 @@ final class Transaction extends AggregateRoot
         return $this->importedAt;
     }
 
+    public function matchedExpectedPaymentId(): ?string
+    {
+        return $this->matchedExpectedPaymentId;
+    }
+
+    /** @return string[] */
+    public function candidateExpectedPaymentIds(): array
+    {
+        return $this->candidateExpectedPaymentIds;
+    }
+
     protected function apply(DomainEvent $event): void
     {
         match (true) {
             $event instanceof TransactionImported => $this->applyImported($event),
+            $event instanceof TransactionMatched => $this->applyMatched($event),
+            $event instanceof TransactionMarkedUnmatched => $this->state = TransactionState::Unmatched,
+            $event instanceof TransactionMarkedAmbiguous => $this->applyMarkedAmbiguous($event),
+            $event instanceof TransactionReconciled => $this->applyReconciled($event),
             default => throw new InvalidArgumentException('Unknown event: ' . $event::class),
         };
     }
@@ -99,6 +161,31 @@ final class Transaction extends AggregateRoot
         $this->reference = $event->reference;
         $this->statementDate = $event->statementDate;
         $this->importedAt = $event->occurredAt();
+    }
+
+    private function applyMatched(TransactionMatched $event): void
+    {
+        $this->state = TransactionState::Matched;
+        $this->matchedExpectedPaymentId = $event->expectedPaymentId;
+    }
+
+    private function applyMarkedAmbiguous(TransactionMarkedAmbiguous $event): void
+    {
+        $this->state = TransactionState::NeedsReview;
+        $this->candidateExpectedPaymentIds = $event->candidateExpectedPaymentIds;
+    }
+
+    private function applyReconciled(TransactionReconciled $event): void
+    {
+        $this->state = TransactionState::Reconciled;
+        $this->matchedExpectedPaymentId = $event->expectedPaymentId;
+    }
+
+    private function assertState(TransactionState $expected): void
+    {
+        if ($this->state !== $expected) {
+            throw new IllegalTransactionStateTransition($this->id, $this->state, $expected);
+        }
     }
 
     protected static function createEmpty(): static

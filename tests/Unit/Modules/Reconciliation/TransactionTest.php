@@ -44,3 +44,47 @@ it('is born Pending and records exactly one TransactionImported event', function
     expect($events)->toHaveCount(1)
         ->and($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionImported::class);
 });
+
+it('auto-reconciles on an exact match', function () {
+    $transaction = importedTransaction();
+    $transaction->releaseEvents();
+
+    $transaction->markMatched('ep-1', Actor::system(), 'c2', 'r1');
+
+    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::Reconciled)
+        ->and($transaction->matchedExpectedPaymentId())->toBe('ep-1')
+        ->and($transaction->version())->toBe(3);
+
+    $events = $transaction->releaseEvents();
+    expect($events)->toHaveCount(2)
+        ->and($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionMatched::class)
+        ->and($events[1])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionReconciled::class)
+        ->and($events[1]->resolution)->toBe('auto');
+});
+
+it('becomes Unmatched when no candidate is found', function () {
+    $transaction = importedTransaction();
+    $transaction->releaseEvents();
+
+    $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
+
+    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::Unmatched);
+});
+
+it('becomes NeedsReview with recorded candidates when ambiguous', function () {
+    $transaction = importedTransaction();
+    $transaction->releaseEvents();
+
+    $transaction->markAmbiguous(['ep-1', 'ep-2'], 'multiple_candidates', Actor::system(), 'c2', 'r1');
+
+    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::NeedsReview)
+        ->and($transaction->candidateExpectedPaymentIds())->toBe(['ep-1', 'ep-2']);
+});
+
+it('rejects markMatched when the transaction is not Pending', function () {
+    $transaction = importedTransaction();
+    $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
+
+    expect(fn () => $transaction->markMatched('ep-1', Actor::system(), 'c3', 'r1'))
+        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition::class);
+});
