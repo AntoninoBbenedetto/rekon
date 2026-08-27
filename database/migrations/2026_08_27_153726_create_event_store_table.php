@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestampTz('occurred_at');
             $table->string('actor_type');
             $table->string('actor_id')->nullable();
-            $table->uuid('causation_id');
-            $table->uuid('correlation_id');
+            $table->string('causation_id');
+            $table->string('correlation_id');
             $table->timestampTz('recorded_at');
 
             $table->unique(['aggregate_id', 'version']);
