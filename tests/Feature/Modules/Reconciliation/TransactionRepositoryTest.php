@@ -26,6 +26,7 @@ it('returns null for an unknown transaction', function () {
 it('saves a newly imported transaction and finds it again', function () {
     $key = IdempotencyKey::forStatementRow('REF-1', 12345, Currency::EUR, new DateTimeImmutable('2026-07-31'), 0);
     $id = TransactionId::deriveFrom($key);
+    $correlationId = (string) Str::uuid();
 
     $transaction = Transaction::import(
         id: $id,
@@ -36,8 +37,8 @@ it('saves a newly imported transaction and finds it again', function () {
         idempotencyKey: $key,
         rawRowChecksum: 'checksum-1',
         actor: Actor::apiCaller('caller-1'),
-        causationId: 'c1',
-        correlationId: 'r1',
+        causationId: (string) Str::uuid(),
+        correlationId: $correlationId,
     );
 
     repository()->save($transaction);
@@ -52,17 +53,18 @@ it('saves a newly imported transaction and finds it again', function () {
 it('persists events recorded across multiple save calls at the correct version', function () {
     $key = IdempotencyKey::forStatementRow('REF-1', 12345, Currency::EUR, new DateTimeImmutable('2026-07-31'), 0);
     $id = TransactionId::deriveFrom($key);
+    $correlationId = (string) Str::uuid();
 
     $transaction = Transaction::import(
         id: $id, money: new Money(12345, Currency::EUR), reference: 'REF-1',
         statementDate: new DateTimeImmutable('2026-07-31'), occurrenceIndex: 0,
         idempotencyKey: $key, rawRowChecksum: 'checksum-1',
-        actor: Actor::apiCaller('caller-1'), causationId: 'c1', correlationId: 'r1',
+        actor: Actor::apiCaller('caller-1'), causationId: (string) Str::uuid(), correlationId: $correlationId,
     );
     repository()->save($transaction);
 
     $reloaded = repository()->find($id);
-    $reloaded->markMatched('ep-1', Actor::system(), 'c2', 'r1');
+    $reloaded->markMatched('ep-1', Actor::system(), (string) Str::uuid(), $correlationId);
     repository()->save($reloaded);
 
     $final = repository()->find($id);
