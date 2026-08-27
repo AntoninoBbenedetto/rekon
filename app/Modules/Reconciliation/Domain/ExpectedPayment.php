@@ -16,6 +16,18 @@ class ExpectedPayment extends Model
 
     protected $fillable = ['id', 'amount_minor_units', 'currency', 'reference'];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'amount_minor_units' => 'integer',
+        ];
+    }
+
     protected static function newFactory(): ExpectedPaymentFactory
     {
         return ExpectedPaymentFactory::new();
