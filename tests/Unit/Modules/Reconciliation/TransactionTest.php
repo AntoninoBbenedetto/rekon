@@ -88,3 +88,59 @@ it('rejects markMatched when the transaction is not Pending', function () {
     expect(fn () => $transaction->markMatched('ep-1', Actor::system(), 'c3', 'r1'))
         ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition::class);
 });
+
+function needsReviewTransaction(): Transaction
+{
+    $transaction = importedTransaction();
+    $transaction->markAmbiguous(['ep-1', 'ep-2'], 'multiple_candidates', Actor::system(), 'c2', 'r1');
+    $transaction->releaseEvents();
+
+    return $transaction;
+}
+
+it('reconciles manually when confirming a recorded candidate', function () {
+    $transaction = needsReviewTransaction();
+
+    $transaction->resolveByConfirming('ep-1', Actor::apiCaller('reviewer-1'), 'c3', 'r2');
+
+    expect($transaction->state())->toBe(TransactionState::Reconciled)
+        ->and($transaction->matchedExpectedPaymentId())->toBe('ep-1');
+
+    $events = $transaction->releaseEvents();
+    expect($events)->toHaveCount(1)
+        ->and($events[0]->resolution)->toBe('manual');
+});
+
+it('rejects confirming a candidate that was never recorded', function () {
+    $transaction = needsReviewTransaction();
+
+    expect(fn () => $transaction->resolveByConfirming('ep-not-a-candidate', Actor::apiCaller('reviewer-1'), 'c3', 'r2'))
+        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\InvalidResolutionCandidate::class);
+});
+
+it('rejects when the transaction is not NeedsReview', function () {
+    $transaction = importedTransaction();
+    $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
+
+    expect(fn () => $transaction->resolveByConfirming('ep-1', Actor::apiCaller('reviewer-1'), 'c3', 'r2'))
+        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition::class);
+});
+
+it('rejects with a reason', function () {
+    $transaction = needsReviewTransaction();
+
+    $transaction->resolveByRejecting('duplicate payment claimed elsewhere', Actor::apiCaller('reviewer-1'), 'c3', 'r2');
+
+    expect($transaction->state())->toBe(TransactionState::Rejected);
+
+    $events = $transaction->releaseEvents();
+    expect($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionRejected::class)
+        ->and($events[0]->reason)->toBe('duplicate payment claimed elsewhere');
+});
+
+it('rejects rejection with an empty reason', function () {
+    $transaction = needsReviewTransaction();
+
+    expect(fn () => $transaction->resolveByRejecting('   ', Actor::apiCaller('reviewer-1'), 'c3', 'r2'))
+        ->toThrow(InvalidArgumentException::class);
+});

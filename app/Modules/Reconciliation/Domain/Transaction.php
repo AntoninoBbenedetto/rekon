@@ -7,7 +7,9 @@ use App\Modules\Reconciliation\Domain\Events\TransactionMarkedAmbiguous;
 use App\Modules\Reconciliation\Domain\Events\TransactionMarkedUnmatched;
 use App\Modules\Reconciliation\Domain\Events\TransactionMatched;
 use App\Modules\Reconciliation\Domain\Events\TransactionReconciled;
+use App\Modules\Reconciliation\Domain\Events\TransactionRejected;
 use App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition;
+use App\Modules\Reconciliation\Domain\Exceptions\InvalidResolutionCandidate;
 use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\AggregateRoot;
 use App\Modules\SharedKernel\Domain\DomainEvent;
@@ -100,6 +102,35 @@ final class Transaction extends AggregateRoot
         ));
     }
 
+    public function resolveByConfirming(string $expectedPaymentId, Actor $actor, string $causationId, string $correlationId): void
+    {
+        $this->assertState(TransactionState::NeedsReview);
+
+        if (!in_array($expectedPaymentId, $this->candidateExpectedPaymentIds, true)) {
+            throw new InvalidResolutionCandidate($expectedPaymentId);
+        }
+
+        $this->record(new TransactionReconciled(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            expectedPaymentId: $expectedPaymentId,
+            resolution: 'manual',
+        ));
+    }
+
+    public function resolveByRejecting(string $reason, Actor $actor, string $causationId, string $correlationId): void
+    {
+        $this->assertState(TransactionState::NeedsReview);
+
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException('A rejection reason is required.');
+        }
+
+        $this->record(new TransactionRejected(
+            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            reason: $reason,
+        ));
+    }
+
     public function aggregateId(): string
     {
         return $this->id;
@@ -149,6 +180,7 @@ final class Transaction extends AggregateRoot
             $event instanceof TransactionMarkedUnmatched => $this->state = TransactionState::Unmatched,
             $event instanceof TransactionMarkedAmbiguous => $this->applyMarkedAmbiguous($event),
             $event instanceof TransactionReconciled => $this->applyReconciled($event),
+            $event instanceof TransactionRejected => $this->state = TransactionState::Rejected,
             default => throw new InvalidArgumentException('Unknown event: ' . $event::class),
         };
     }
