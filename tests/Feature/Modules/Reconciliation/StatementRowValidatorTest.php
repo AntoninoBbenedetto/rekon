@@ -13,7 +13,8 @@ it('validates and normalizes a well-formed row', function () {
         ->and($row->reference)->toBe('REF-1')
         ->and($row->amountMinorUnits)->toBe(12345)
         ->and($row->currency)->toBe(Currency::EUR)
-        ->and($row->statementDate->format('Y-m-d'))->toBe('2026-07-31');
+        ->and($row->statementDate->format('Y-m-d'))->toBe('2026-07-31')
+        ->and($row->statementDate->format('H:i:s'))->toBe('00:00:00');
 });
 
 it('rejects a non-numeric amount', function () {

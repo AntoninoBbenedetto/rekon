@@ -38,7 +38,7 @@ final class StatementRowValidator
             reference: trim($line->reference),
             amountMinorUnits: (int) $line->amountMinorUnits,
             currency: Currency::from(strtoupper($line->currency)),
-            statementDate: DateTimeImmutable::createFromFormat('Y-m-d', $line->statementDate),
+            statementDate: DateTimeImmutable::createFromFormat('!Y-m-d', $line->statementDate),
             rawLine: $line->rawLine,
         );
 
