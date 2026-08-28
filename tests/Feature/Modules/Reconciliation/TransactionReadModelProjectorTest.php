@@ -9,6 +9,7 @@ use App\Modules\SharedKernel\Domain\IdempotencyKey;
 use App\Modules\SharedKernel\Domain\Money;
 use App\Modules\SharedKernel\Domain\TransactionId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -47,7 +48,8 @@ it('overwrites the row on a later projection of the same aggregate', function ()
     $projector = new TransactionReadModelProjector();
     $projector->project($transaction);
 
-    $transaction->markMatched('ep-1', Actor::system(), 'c2', 'r1');
+    $expectedPaymentId = (string) Str::uuid();
+    $transaction->markMatched($expectedPaymentId, Actor::system(), 'c2', 'r1');
     $projector->project($transaction);
 
     expect(TransactionProjection::query()->count())->toBe(1)
