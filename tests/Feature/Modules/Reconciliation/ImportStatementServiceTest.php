@@ -1,0 +1,88 @@
+<?php
+
+use App\Modules\Reconciliation\Application\ImportStatementService;
+use App\Modules\Reconciliation\Application\TransactionRepository;
+use App\Modules\Reconciliation\Domain\Events\TransactionEventTypes;
+use App\Modules\Reconciliation\Infrastructure\CsvStatementParser;
+use App\Modules\Reconciliation\Infrastructure\MalformedStatementException;
+use App\Modules\Reconciliation\Infrastructure\MatchPendingTransactionJob;
+use App\Modules\Reconciliation\Infrastructure\StatementRowValidator;
+use App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector;
+use App\Modules\SharedKernel\Domain\Actor;
+use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+
+uses(RefreshDatabase::class);
+
+function importService(): ImportStatementService
+{
+    return new ImportStatementService(
+        new CsvStatementParser(),
+        new StatementRowValidator(),
+        new TransactionRepository(new PostgresEventStore(TransactionEventTypes::map())),
+        new TransactionReadModelProjector(),
+    );
+}
+
+const VALID_STATEMENT_CSV = <<<CSV
+reference,amount_minor_units,currency,statement_date
+REF-1,12345,EUR,2026-07-31
+REF-2,500,EUR,2026-07-31
+CSV;
+
+it('imports every valid row and dispatches a matching job for each', function () {
+    Queue::fake();
+
+    $summary = importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
+
+    expect($summary->rowsReceived)->toBe(2)
+        ->and($summary->rowsImported)->toBe(2)
+        ->and($summary->rowsAlreadyImported)->toBe(0)
+        ->and($summary->rowsInvalid)->toBe(0)
+        ->and($summary->transactionIds)->toHaveCount(2);
+
+    Queue::assertPushed(MatchPendingTransactionJob::class, 2);
+});
+
+it('is idempotent: re-importing the same statement imports nothing new', function () {
+    Queue::fake();
+
+    importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
+    $second = importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
+
+    expect($second->rowsImported)->toBe(0)
+        ->and($second->rowsAlreadyImported)->toBe(2);
+});
+
+it('imports two genuinely identical rows as two distinct transactions, and a resubmission of both as a no-op', function () {
+    Queue::fake();
+    $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31\nREF-1,12345,EUR,2026-07-31";
+
+    $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
+
+    expect($summary->rowsImported)->toBe(2)
+        ->and($summary->transactionIds[0])->not->toBe($summary->transactionIds[1]);
+
+    $resubmitted = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
+    expect($resubmitted->rowsImported)->toBe(0)
+        ->and($resubmitted->rowsAlreadyImported)->toBe(2);
+});
+
+it('reports content-invalid rows without failing the rest of the import', function () {
+    Queue::fake();
+    $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31\nREF-2,not-a-number,EUR,2026-07-31";
+
+    $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
+
+    expect($summary->rowsImported)->toBe(1)
+        ->and($summary->rowsInvalid)->toBe(1)
+        ->and($summary->invalidRows[0]['row_number'])->toBe(2);
+});
+
+it('throws for a structurally invalid CSV', function () {
+    $csv = "reference,amount_minor_units\nREF-1,12345";
+
+    expect(fn () => importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid()))
+        ->toThrow(MalformedStatementException::class);
+});
