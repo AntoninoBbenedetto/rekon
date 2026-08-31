@@ -32,7 +32,15 @@ final class MatchPendingTransactionJob implements ShouldQueue
     ): void {
         $transaction = $repository->find(TransactionId::fromString($this->transactionId));
 
-        if ($transaction === null || $transaction->state() !== TransactionState::Pending) {
+        if ($transaction === null) {
+            return;
+        }
+
+        if ($transaction->state() !== TransactionState::Pending) {
+            // A previous run already advanced this transaction; re-project its
+            // current state in case that run's own projection did not land.
+            $projector->project($transaction);
+
             return;
         }
 

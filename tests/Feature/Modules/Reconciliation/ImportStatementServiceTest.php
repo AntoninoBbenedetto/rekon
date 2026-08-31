@@ -6,9 +6,11 @@ use App\Modules\Reconciliation\Domain\Events\TransactionEventTypes;
 use App\Modules\Reconciliation\Infrastructure\CsvStatementParser;
 use App\Modules\Reconciliation\Infrastructure\MalformedStatementException;
 use App\Modules\Reconciliation\Infrastructure\MatchPendingTransactionJob;
+use App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection;
 use App\Modules\Reconciliation\Infrastructure\StatementRowValidator;
 use App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector;
 use App\Modules\SharedKernel\Domain\Actor;
+use App\Modules\SharedKernel\Domain\TransactionId;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -78,6 +80,27 @@ it('reports content-invalid rows without failing the rest of the import', functi
     expect($summary->rowsImported)->toBe(1)
         ->and($summary->rowsInvalid)->toBe(1)
         ->and($summary->invalidRows[0]['row_number'])->toBe(2);
+});
+
+it('re-projects the transaction current state on an idempotent re-import', function () {
+    Queue::fake();
+    $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31";
+
+    $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
+    $id = TransactionId::fromString($summary->transactionIds[0]);
+
+    // Advance the transaction beyond Pending, as a matching run would.
+    $repository = app(TransactionRepository::class);
+    $transaction = $repository->find($id);
+    $transaction->markMatched((string) Str::uuid(), Actor::system(), (string) Str::uuid(), (string) Str::uuid());
+    $repository->save($transaction);
+
+    // Simulate the read model having missed that state change (stale row).
+    TransactionProjection::query()->where('transaction_id', $id->value)->update(['state' => 'Pending']);
+
+    importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
+
+    expect(TransactionProjection::query()->find($id->value)->state)->toBe('Reconciled');
 });
 
 it('throws for a structurally invalid CSV', function () {

@@ -84,6 +84,12 @@ final class ImportStatementService
                     $this->repository->save($transaction);
                 } catch (ConcurrencyConflictException) {
                     $alreadyImportedCount++;
+
+                    $existing = $this->repository->find($transactionId);
+                    if ($existing !== null) {
+                        $this->projector->project($existing);
+                    }
+
                     continue;
                 }
 

@@ -65,6 +65,26 @@ it('is a no-op when the transaction is no longer Pending (queue redelivery)', fu
     expect($afterSecondRun)->toBe($afterFirstRun);
 });
 
+it('re-projects the current state on redelivery even though matching is a no-op', function () {
+    ExpectedPayment::factory()->create(['reference' => 'REF-1', 'amount_minor_units' => 12345, 'currency' => 'EUR']);
+    $id = importedPendingTransaction();
+    $repository = app(TransactionRepository::class);
+    $matcher = app(\App\Modules\Reconciliation\Application\MatchTransactionService::class);
+    $projector = app(\App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector::class);
+
+    (new MatchPendingTransactionJob($id->value, (string) Str::uuid()))->handle($repository, $matcher, $projector);
+
+    // Simulate the first run's own projection having failed to land (stale row).
+    \App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection::query()
+        ->where('transaction_id', $id->value)
+        ->update(['state' => 'Pending']);
+
+    (new MatchPendingTransactionJob($id->value, (string) Str::uuid()))->handle($repository, $matcher, $projector);
+
+    $projected = \App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection::query()->find($id->value);
+    expect($projected->state)->toBe('Reconciled');
+});
+
 it('is a no-op for an unknown transaction id', function () {
     $repository = app(TransactionRepository::class);
     $matcher = app(\App\Modules\Reconciliation\Application\MatchTransactionService::class);
