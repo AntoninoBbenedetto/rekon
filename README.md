@@ -40,6 +40,21 @@ Every state transition is a domain event appended to an event store; the
 queryable read model is a disposable projection of that store, never a source
 of truth.
 
+## Getting started
+
+```bash
+cp .env.example .env
+docker compose up -d
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Run the test suite:
+
+```bash
+docker compose exec app php artisan test
+```
+
 ## Reading order
 
 Start here if you want the *why*:

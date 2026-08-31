@@ -43,6 +43,21 @@ Ogni transizione di stato è un evento di dominio appeso a un event store; il
 read model interrogabile è una proiezione usa e getta di quello store, mai una
 fonte di verità.
 
+## Per iniziare
+
+```bash
+cp .env.example .env
+docker compose up -d
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Per eseguire la suite di test:
+
+```bash
+docker compose exec app php artisan test
+```
+
 ## Ordine di lettura
 
 Si parte da qui per il *perché*:
