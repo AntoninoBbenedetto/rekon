@@ -3,21 +3,21 @@
 namespace App\Modules\Reconciliation\Infrastructure\Http\Controllers;
 
 use App\Modules\Reconciliation\Domain\Transaction;
+use App\Modules\Reconciliation\Infrastructure\Http\Requests\ListTransactionsRequest;
+use App\Modules\Reconciliation\Infrastructure\Http\TransactionDetailPresenter;
 use App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection;
 use App\Modules\SharedKernel\Application\EventStore;
-use App\Modules\SharedKernel\Domain\DomainEvent;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 final class TransactionsController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(ListTransactionsRequest $request): JsonResponse
     {
         $query = TransactionProjection::query();
 
         if ($request->filled('state')) {
-            $query->where('state', $request->string('state'));
+            $query->where('state', (string) $request->string('state'));
         }
 
         $data = $query->orderBy('imported_at')->get()->map(fn (TransactionProjection $t) => [
@@ -43,27 +43,6 @@ final class TransactionsController extends Controller
 
         $transaction = Transaction::reconstituteFromStream($events);
 
-        return response()->json($this->toDetailPayload($transaction, $events));
-    }
-
-    /** @param DomainEvent[] $events */
-    private function toDetailPayload(Transaction $transaction, array $events): array
-    {
-        return [
-            'id' => $transaction->aggregateId(),
-            'state' => $transaction->state()->value,
-            'amount_minor_units' => $transaction->money()->amountMinorUnits,
-            'currency' => $transaction->money()->currency->value,
-            'reference' => $transaction->reference(),
-            'version' => $transaction->version(),
-            'history' => array_map(fn (DomainEvent $event) => [
-                'event_type' => $event->eventType(),
-                'occurred_at' => $event->occurredAt()->format(DATE_ATOM),
-                'actor' => ['type' => $event->actor()->type->value, 'id' => $event->actor()->id],
-                'causation_id' => $event->causationId(),
-                'correlation_id' => $event->correlationId(),
-                'payload' => $event->payload(),
-            ], $events),
-        ];
+        return response()->json(TransactionDetailPresenter::toPayload($transaction, $events));
     }
 }

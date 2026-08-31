@@ -33,6 +33,24 @@ it('confirms a NeedsReview transaction against a valid candidate', function () {
     $response->assertOk()->assertJsonPath('state', 'Reconciled');
 });
 
+it('includes the full event history in the resolve response, same shape as GET /transactions/{id}', function () {
+    $id = importAndReturnNeedsReviewId();
+    $candidateId = ExpectedPayment::query()->where('reference', 'REF-1')->where('amount_minor_units', 12345)->first()->id;
+
+    $response = $this->postJson("/api/transactions/{$id}/resolve", [
+        'action' => 'confirm',
+        'expected_payment_id' => $candidateId,
+    ]);
+
+    // imported, matched-ambiguous, reconciled (manual) = 3 events
+    $response->assertOk()
+        ->assertJsonCount(3, 'history')
+        ->assertJsonPath('history.2.event_type', 'transaction.reconciled');
+
+    $detail = $this->getJson("/api/transactions/{$id}");
+    $detail->assertOk()->assertJsonCount(3, 'history');
+});
+
 it('rejects a NeedsReview transaction with a reason', function () {
     $id = importAndReturnNeedsReviewId();
 
@@ -78,6 +96,15 @@ it('returns 409 when the transaction is not currently NeedsReview', function () 
 
 it('returns 404 for an unknown transaction id', function () {
     $response = $this->postJson('/api/transactions/' . (string) Str::uuid() . '/resolve', [
+        'action' => 'reject',
+        'reason' => 'irrelevant',
+    ]);
+
+    $response->assertStatus(404);
+});
+
+it('returns 404 for a non-uuid transaction id', function () {
+    $response = $this->postJson('/api/transactions/not-a-uuid/resolve', [
         'action' => 'reject',
         'reason' => 'irrelevant',
     ]);

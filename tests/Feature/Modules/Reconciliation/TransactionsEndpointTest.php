@@ -42,3 +42,15 @@ it('returns 404 for an unknown transaction id', function () {
 
     $response->assertStatus(404);
 });
+
+it('returns 404 for a non-uuid transaction id', function () {
+    $response = $this->getJson('/api/transactions/not-a-uuid');
+
+    $response->assertStatus(404);
+});
+
+it('returns 422 for an unrecognized state filter value', function () {
+    $response = $this->getJson('/api/transactions?state=NotARealState');
+
+    $response->assertStatus(422)->assertJsonValidationErrors('state');
+});

@@ -7,5 +7,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/imports', [ImportsController::class, 'store']);
 Route::get('/transactions', [TransactionsController::class, 'index']);
-Route::get('/transactions/{id}', [TransactionsController::class, 'show']);
-Route::post('/transactions/{id}/resolve', [ResolveTransactionController::class, 'store']);
+Route::get('/transactions/{id}', [TransactionsController::class, 'show'])->whereUuid('id');
+Route::post('/transactions/{id}/resolve', [ResolveTransactionController::class, 'store'])->whereUuid('id');

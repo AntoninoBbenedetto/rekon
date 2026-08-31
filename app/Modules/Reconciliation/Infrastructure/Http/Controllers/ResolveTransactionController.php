@@ -8,6 +8,7 @@ use App\Modules\Reconciliation\Domain\Exceptions\InvalidResolutionCandidate;
 use App\Modules\Reconciliation\Domain\Exceptions\TransactionNotFound;
 use App\Modules\Reconciliation\Domain\Transaction;
 use App\Modules\Reconciliation\Infrastructure\Http\Requests\ResolveTransactionRequest;
+use App\Modules\Reconciliation\Infrastructure\Http\TransactionDetailPresenter;
 use App\Modules\SharedKernel\Application\EventStore;
 use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\Exceptions\ConcurrencyConflictException;
@@ -42,7 +43,9 @@ final class ResolveTransactionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json($this->toDetailPayload($transaction));
+        $events = $this->eventStore->loadStream($transaction->aggregateId());
+
+        return response()->json(TransactionDetailPresenter::toPayload($transaction, $events));
     }
 
     private function currentStateConflictResponse(string $id): JsonResponse
@@ -53,17 +56,5 @@ final class ResolveTransactionController extends Controller
             'message' => 'Transaction is not currently resolvable.',
             'current_state' => $transaction->state()->value,
         ], 409);
-    }
-
-    private function toDetailPayload(Transaction $transaction): array
-    {
-        return [
-            'id' => $transaction->aggregateId(),
-            'state' => $transaction->state()->value,
-            'amount_minor_units' => $transaction->money()->amountMinorUnits,
-            'currency' => $transaction->money()->currency->value,
-            'reference' => $transaction->reference(),
-            'version' => $transaction->version(),
-        ];
     }
 }
