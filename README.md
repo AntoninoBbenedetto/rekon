@@ -13,9 +13,11 @@ auditability as structural properties rather than conventions.
 
 ## Status
 
-**Design complete, implementation not started.** This repository currently
-contains the architecture: specs, ADRs, C4 diagrams, and a failure-mode
-analysis. There is no application code yet.
+**Implemented.** The v1 vertical slice described below is built and tested —
+CSV import, matching, manual review resolution, and the REST API are all in
+place, with 95 passing tests covering unit, integration, and end-to-end paths.
+The repository also contains the architecture that shaped it: specs, ADRs,
+C4 diagrams, and a failure-mode analysis.
 
 That order is deliberate. The design already had to correct itself once —
 [ADR-006](docs/adr/ADR-006-deterministic-aggregate-id.md) exists because an

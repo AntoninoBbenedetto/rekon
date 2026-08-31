@@ -14,9 +14,11 @@ concorrenza e tracciabilità come proprietà strutturali, non come convenzioni.
 
 ## Stato
 
-**Design completo, implementazione non iniziata.** Questo repository contiene
-al momento l'architettura: spec, ADR, diagrammi C4 e un'analisi dei failure
-mode. Non c'è ancora codice applicativo.
+**Implementato.** Lo slice verticale v1 descritto di seguito è costruito e
+testato — import CSV, matching, risoluzione manuale delle revisioni e API
+REST sono tutti presenti, con 95 test superati che coprono percorsi unit,
+integration ed end-to-end. Il repository contiene anche l'architettura che
+lo ha guidato: spec, ADR, diagrammi C4 e un'analisi dei failure mode.
 
 L'ordine è deliberato. Il design ha già dovuto correggersi una volta:
 l'[ADR-006](docs/adr/ADR-006-deterministic-aggregate-id_it.md) esiste perché un
