@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\SharedKernel\Infrastructure\EventStore;
 
 use App\Modules\SharedKernel\Application\EventStore;

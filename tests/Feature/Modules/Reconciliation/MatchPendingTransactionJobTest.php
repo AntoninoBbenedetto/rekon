@@ -13,6 +13,7 @@ use App\Modules\SharedKernel\Domain\Money;
 use App\Modules\SharedKernel\Domain\TransactionId;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
 
@@ -94,4 +95,34 @@ it('is a no-op for an unknown transaction id', function () {
     (new MatchPendingTransactionJob($unknownId, (string) Str::uuid()))->handle($repository, $matcher, $projector);
 
     expect(\App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection::query()->find($unknownId))->toBeNull();
+});
+
+it('retries a transient failure instead of stranding the transaction in Pending', function () {
+    $job = new MatchPendingTransactionJob((string) Str::uuid(), (string) Str::uuid());
+
+    // Redelivery is a no-op unless the transaction is still Pending (covered
+    // above), so retrying costs nothing and rescues a transient failure.
+    expect($job->tries)->toBeGreaterThan(1)
+        ->and($job->backoff)->not->toBeEmpty();
+
+    $sorted = $job->backoff;
+    sort($sorted);
+    expect($job->backoff)->toBe($sorted); // grows, so a lost race is not retried immediately
+});
+
+it('records the transaction identity when matching permanently fails', function () {
+    Log::spy();
+
+    $transactionId = (string) Str::uuid();
+    $correlationId = (string) Str::uuid();
+
+    (new MatchPendingTransactionJob($transactionId, $correlationId))
+        ->failed(new RuntimeException('queue backend unreachable'));
+
+    Log::shouldHaveReceived('error')->once()->withArgs(
+        fn (string $message, array $context) => str_contains($message, 'Pending')
+            && $context['transaction_id'] === $transactionId
+            && $context['correlation_id'] === $correlationId
+            && $context['exception'] === 'queue backend unreachable',
+    );
 });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Reconciliation\Domain;
 
 use App\Modules\Reconciliation\Domain\Events\TransactionImported;

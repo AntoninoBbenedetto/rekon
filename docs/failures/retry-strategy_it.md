@@ -37,12 +37,27 @@ sono *entrambe* in corso contro una transazione `Pending`, solo un append
 può vincere; l'altro riceve un conflitto di versione e, al retry, vede che
 la transazione non è più `Pending` e fa no-op.
 
+`MatchPendingTransactionJob` imposta `$tries = 5` con un backoff crescente
+(`[5, 15, 60, 180]` secondi) invece di affidarsi al comportamento di default
+del queue worker. Il ritardo crescente conta in particolare per via
+dell'[ADR-003](../adr/ADR-003-optimistic-concurrency_it.md): chi perde un
+conflitto di concorrenza ottimistica deve dare al vincitore il tempo di
+completare il commit, altrimenti torna a contendersi la stessa riga
+dell'aggregate e perde di nuovo.
+
 ## Cosa NON è coperto in v1
 
+- **Una transazione che esaurisce tutti i retry resta `Pending` per
+  sempre, e nulla la ri-processa.** `failed()` registra l'id della
+  transazione e il correlation id così il fallimento è *visibile* (in
+  `failed_jobs` e nel log applicativo), ma non esiste uno sweep
+  schedulato che trovi le transazioni `Pending` bloccate e le rimetta in
+  coda. La visibilità non equivale al recupero — è il gap da chiudere
+  prima che questa mitigazione possa dirsi completa.
 - La gestione dei "poison message" (un job che fallisce deterministicamente
-  ogni volta ed esaurisce i retry) non ha ancora un design dedicato di
-  dead-letter — si applica il comportamento di retry/backoff di default del
-  queue worker.
+  ogni volta) non ha ancora una *elaborazione* dedicata di dead-letter — i
+  fallimenti finiscono in `failed_jobs` per comportamento di default di
+  Laravel e non sono triagizzati automaticamente.
 - Nessuna chiave di idempotenza a livello di *job* (es. deduplicare payload
   di job in coda identici prima dell'esecuzione) — la deduplicazione avviene
   a livello di dominio/stato invece, il che è sufficiente perché il

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Reconciliation\Application;
 
 use App\Modules\Reconciliation\Domain\Exceptions\TransactionNotFound;

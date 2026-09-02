@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Reconciliation\Domain\Events;
 
 use App\Modules\SharedKernel\Domain\AbstractDomainEvent;

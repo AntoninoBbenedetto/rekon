@@ -75,7 +75,7 @@ handled as a no-op, not an error.
   is recoverable from CSV row content given the namespace UUID and hashing
   scheme. Not a security concern for v1 (no authorization boundary depends
   on ID unguessability, and there is no authentication at all yet — see
-  [ADR-004](ADR-004-rest-api-only-no-admin-panel.md)), but a real
+  [ADR-008](ADR-008-no-authentication-in-v1.md)), but a real
   consideration if the project ever needs unguessable transaction
   identifiers.
 - Aggregate identity is now coupled to `IdempotencyKey`'s definition (which
