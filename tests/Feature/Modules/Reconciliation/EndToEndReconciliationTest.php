@@ -1,11 +1,12 @@
 <?php
 
-use App\Modules\Reconciliation\Application\ResolveReviewService;
 use App\Modules\Reconciliation\Application\TransactionRepository;
 use App\Modules\Reconciliation\Domain\Events\TransactionEventTypes;
 use App\Modules\Reconciliation\Domain\ExpectedPayment;
+use App\Modules\Reconciliation\Domain\TransactionState;
 use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\Exceptions\ConcurrencyConflictException;
+use App\Modules\SharedKernel\Domain\TransactionId;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -64,7 +65,7 @@ it('rejects the loser of two concurrent resolutions with a ConcurrencyConflictEx
     $id = $import->json('transaction_ids.0');
 
     // Il matching per REF-1 con due candidati esatti produce NeedsReview (multiple_candidates, spec §6.2).
-    $transactionId = \App\Modules\SharedKernel\Domain\TransactionId::fromString($id);
+    $transactionId = TransactionId::fromString($id);
     $candidateId = ExpectedPayment::query()->where('reference', 'REF-1')->first()->id;
 
     // Due copie indipendenti dello stesso aggregate, caricate dallo stesso stato iniziale — simula la race:
@@ -80,5 +81,5 @@ it('rejects the loser of two concurrent resolutions with a ConcurrencyConflictEx
     expect(fn () => $repository->save($secondCopy))->toThrow(ConcurrencyConflictException::class);
 
     // Lo stato persistito riflette il vincitore della race, non il perdente.
-    expect($repository->find($transactionId)->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::Reconciled);
+    expect($repository->find($transactionId)->state())->toBe(TransactionState::Reconciled);
 });

@@ -54,7 +54,7 @@ function resolveService(): ResolveReviewService
 {
     return new ResolveReviewService(
         new TransactionRepository(new PostgresEventStore(TransactionEventTypes::map())),
-        new TransactionReadModelProjector(),
+        new TransactionReadModelProjector,
     );
 }
 

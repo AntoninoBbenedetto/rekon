@@ -10,9 +10,7 @@ use App\Modules\SharedKernel\Domain\TransactionId;
 
 final class TransactionRepository
 {
-    public function __construct(private readonly EventStore $eventStore)
-    {
-    }
+    public function __construct(private readonly EventStore $eventStore) {}
 
     public function find(TransactionId $id): ?Transaction
     {

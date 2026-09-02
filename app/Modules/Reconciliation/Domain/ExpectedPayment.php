@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ExpectedPayment extends Model
 {
+    /** @use HasFactory<ExpectedPaymentFactory> */
     use HasFactory;
 
     public $incrementing = false;

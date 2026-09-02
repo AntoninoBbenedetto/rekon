@@ -43,8 +43,7 @@ final class MatchPendingTransactionJob implements ShouldQueue
     public function __construct(
         public readonly string $transactionId,
         public readonly string $correlationId,
-    ) {
-    }
+    ) {}
 
     public function handle(
         TransactionRepository $repository,

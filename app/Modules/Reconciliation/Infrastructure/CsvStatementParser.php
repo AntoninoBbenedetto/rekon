@@ -17,7 +17,11 @@ final class CsvStatementParser
             throw new MalformedStatementException(['The CSV file is empty.']);
         }
 
-        $header = str_getcsv(array_shift($lines));
+        $headerLine = array_shift($lines);
+        assert($headerLine !== null);
+
+        /** @var list<string> $header */
+        $header = str_getcsv($headerLine);
         $missingColumns = array_values(array_diff(self::REQUIRED_COLUMNS, $header));
 
         if ($missingColumns !== []) {

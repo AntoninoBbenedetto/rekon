@@ -23,8 +23,7 @@ final class ImportStatementService
         private readonly StatementRowValidator $rowValidator,
         private readonly TransactionRepository $repository,
         private readonly TransactionReadModelProjector $projector,
-    ) {
-    }
+    ) {}
 
     public function import(string $csvContents, Actor $actor, string $correlationId): ImportSummary
     {
@@ -38,6 +37,7 @@ final class ImportStatementService
 
             if ($row === null) {
                 $invalidRows[] = ['row_number' => $line->rowNumber, 'errors' => $errors];
+
                 continue;
             }
 
@@ -59,7 +59,7 @@ final class ImportStatementService
         $alreadyImportedCount = 0;
 
         foreach ($groups as $rowsInGroup) {
-            foreach (array_values($rowsInGroup) as $occurrenceIndex => $row) {
+            foreach ($rowsInGroup as $occurrenceIndex => $row) {
                 $idempotencyKey = IdempotencyKey::forStatementRow(
                     $row->reference,
                     $row->amountMinorUnits,

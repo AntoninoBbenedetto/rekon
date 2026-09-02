@@ -27,20 +27,21 @@ final class FakeIncrementedEvent extends AbstractDomainEvent
 final class FakeCounter extends AggregateRoot
 {
     private string $id;
+
     private int $count = 0;
 
     public static function start(string $id): self
     {
         $counter = self::createEmpty();
         $counter->id = $id;
-        $counter->record(new FakeIncrementedEvent($id, new DateTimeImmutable(), Actor::system(), 'c1', 'r1'));
+        $counter->record(new FakeIncrementedEvent($id, new DateTimeImmutable, Actor::system(), 'c1', 'r1'));
 
         return $counter;
     }
 
     public function incrementAgain(): void
     {
-        $this->record(new FakeIncrementedEvent($this->id, new DateTimeImmutable(), Actor::system(), 'c2', 'r1'));
+        $this->record(new FakeIncrementedEvent($this->id, new DateTimeImmutable, Actor::system(), 'c2', 'r1'));
     }
 
     public function aggregateId(): string
@@ -61,7 +62,7 @@ final class FakeCounter extends AggregateRoot
 
     protected static function createEmpty(): static
     {
-        return new self();
+        return new self;
     }
 }
 
@@ -89,9 +90,9 @@ it('releases recorded events exactly once', function () {
 
 it('reconstitutes state and version by replaying a stream', function () {
     $events = [
-        new FakeIncrementedEvent('agg-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1'),
-        new FakeIncrementedEvent('agg-1', new DateTimeImmutable(), Actor::system(), 'c2', 'r1'),
-        new FakeIncrementedEvent('agg-1', new DateTimeImmutable(), Actor::system(), 'c3', 'r1'),
+        new FakeIncrementedEvent('agg-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1'),
+        new FakeIncrementedEvent('agg-1', new DateTimeImmutable, Actor::system(), 'c2', 'r1'),
+        new FakeIncrementedEvent('agg-1', new DateTimeImmutable, Actor::system(), 'c3', 'r1'),
     ];
 
     $counter = FakeCounter::reconstituteFromStream($events);

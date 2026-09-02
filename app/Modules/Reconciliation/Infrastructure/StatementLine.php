@@ -13,6 +13,5 @@ final class StatementLine
         public readonly string $currency,
         public readonly string $statementDate,
         public readonly string $rawLine,
-    ) {
-    }
+    ) {}
 }

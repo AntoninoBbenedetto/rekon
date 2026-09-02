@@ -9,6 +9,9 @@ use DateTimeImmutable;
 
 final class StoredEventRow
 {
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function __construct(
         public readonly string $aggregateId,
         public readonly int $version,
@@ -18,6 +21,5 @@ final class StoredEventRow
         public readonly Actor $actor,
         public readonly string $causationId,
         public readonly string $correlationId,
-    ) {
-    }
+    ) {}
 }

@@ -14,11 +14,12 @@ docker compose up -d
 docker compose exec app php artisan migrate
 docker compose exec app php artisan test      # oppure: composer test (dentro il container)
 docker compose exec app ./vendor/bin/pint      # style fix — nessuno script composer dedicato, nessuna config custom
+docker compose exec app ./vendor/bin/phpstan analyse   # static analysis (Larastan, level 6, config in phpstan.neon)
 ```
 
-Non esiste CI (`.github/workflows` assente) e non c'è uno script di static
-analysis (nessun PHPStan/Larastan installato): prima di considerare un
-cambiamento pronto, esegui manualmente test e Pint.
+Non esiste CI (`.github/workflows` assente): prima di considerare un
+cambiamento pronto, esegui manualmente test, Pint e Larastan (nessuno di
+questi gira automaticamente).
 
 ## Mappa del repo
 

@@ -1,5 +1,7 @@
 # Financial Reconciliation Engine
 
+![CI](https://github.com/AntoninoBbenedetto/rekon/actions/workflows/ci.yml/badge.svg)
+
 *[Versione italiana](README_it.md)*
 
 A design study in getting financial state right under failure: importing bank

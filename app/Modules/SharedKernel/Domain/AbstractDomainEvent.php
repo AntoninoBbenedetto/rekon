@@ -14,8 +14,7 @@ abstract class AbstractDomainEvent implements DomainEvent
         private readonly Actor $actor,
         private readonly string $causationId,
         private readonly string $correlationId,
-    ) {
-    }
+    ) {}
 
     public function aggregateId(): string
     {

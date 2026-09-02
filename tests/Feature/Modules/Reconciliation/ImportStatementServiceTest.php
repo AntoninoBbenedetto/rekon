@@ -20,14 +20,14 @@ uses(RefreshDatabase::class);
 function importService(): ImportStatementService
 {
     return new ImportStatementService(
-        new CsvStatementParser(),
-        new StatementRowValidator(),
+        new CsvStatementParser,
+        new StatementRowValidator,
         new TransactionRepository(new PostgresEventStore(TransactionEventTypes::map())),
-        new TransactionReadModelProjector(),
+        new TransactionReadModelProjector,
     );
 }
 
-const VALID_STATEMENT_CSV = <<<CSV
+const VALID_STATEMENT_CSV = <<<'CSV'
 reference,amount_minor_units,currency,statement_date
 REF-1,12345,EUR,2026-07-31
 REF-2,500,EUR,2026-07-31

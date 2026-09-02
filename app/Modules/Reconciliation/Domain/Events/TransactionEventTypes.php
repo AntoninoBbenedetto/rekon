@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Reconciliation\Domain\Events;
 
+use App\Modules\SharedKernel\Domain\DomainEvent;
+
 final class TransactionEventTypes
 {
-    /** @return array<string, class-string<\App\Modules\SharedKernel\Domain\DomainEvent>> */
+    /** @return array<string, class-string<DomainEvent>> */
     public static function map(): array
     {
         return [

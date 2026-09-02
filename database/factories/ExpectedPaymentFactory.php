@@ -17,7 +17,7 @@ class ExpectedPaymentFactory extends Factory
             'id' => (string) Str::uuid(),
             'amount_minor_units' => $this->faker->numberBetween(1000, 100000),
             'currency' => 'EUR',
-            'reference' => strtoupper('REF-' . $this->faker->unique()->numberBetween(1000, 9999)),
+            'reference' => strtoupper('REF-'.$this->faker->unique()->numberBetween(1000, 9999)),
         ];
     }
 }

@@ -26,7 +26,7 @@ function envelope(array $payload, string $eventType): StoredEventRow
 
 it('round-trips TransactionImported', function () {
     $event = new TransactionImported(
-        'txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1',
+        'txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1',
         amountMinorUnits: 12345,
         currency: Currency::EUR,
         reference: 'REF-1',
@@ -56,7 +56,7 @@ it('round-trips TransactionImported', function () {
 });
 
 it('round-trips TransactionMatched', function () {
-    $event = new TransactionMatched('txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1', expectedPaymentId: 'ep-1', matchType: 'exact');
+    $event = new TransactionMatched('txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1', expectedPaymentId: 'ep-1', matchType: 'exact');
 
     expect($event->eventType())->toBe('transaction.matched')
         ->and($event->payload())->toBe(['transaction_id' => 'txn-1', 'expected_payment_id' => 'ep-1', 'match_type' => 'exact']);
@@ -66,7 +66,7 @@ it('round-trips TransactionMatched', function () {
 });
 
 it('round-trips TransactionMarkedUnmatched', function () {
-    $event = new TransactionMarkedUnmatched('txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1', reason: 'no_candidate_found');
+    $event = new TransactionMarkedUnmatched('txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1', reason: 'no_candidate_found');
 
     expect($event->eventType())->toBe('transaction.marked_unmatched')
         ->and($event->payload())->toBe(['transaction_id' => 'txn-1', 'reason' => 'no_candidate_found']);
@@ -76,7 +76,7 @@ it('round-trips TransactionMarkedUnmatched', function () {
 });
 
 it('round-trips TransactionMarkedAmbiguous', function () {
-    $event = new TransactionMarkedAmbiguous('txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1', candidateExpectedPaymentIds: ['ep-1', 'ep-2'], reason: 'multiple_candidates');
+    $event = new TransactionMarkedAmbiguous('txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1', candidateExpectedPaymentIds: ['ep-1', 'ep-2'], reason: 'multiple_candidates');
 
     expect($event->eventType())->toBe('transaction.marked_ambiguous')
         ->and($event->payload())->toBe([
@@ -90,7 +90,7 @@ it('round-trips TransactionMarkedAmbiguous', function () {
 });
 
 it('round-trips TransactionReconciled', function () {
-    $event = new TransactionReconciled('txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1', expectedPaymentId: 'ep-1', resolution: 'auto');
+    $event = new TransactionReconciled('txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1', expectedPaymentId: 'ep-1', resolution: 'auto');
 
     expect($event->eventType())->toBe('transaction.reconciled')
         ->and($event->payload())->toBe(['transaction_id' => 'txn-1', 'expected_payment_id' => 'ep-1', 'resolution' => 'auto']);
@@ -100,7 +100,7 @@ it('round-trips TransactionReconciled', function () {
 });
 
 it('round-trips TransactionRejected', function () {
-    $event = new TransactionRejected('txn-1', new DateTimeImmutable(), Actor::system(), 'c1', 'r1', reason: 'duplicate payment claimed elsewhere');
+    $event = new TransactionRejected('txn-1', new DateTimeImmutable, Actor::system(), 'c1', 'r1', reason: 'duplicate payment claimed elsewhere');
 
     expect($event->eventType())->toBe('transaction.rejected')
         ->and($event->payload())->toBe(['transaction_id' => 'txn-1', 'reason' => 'duplicate payment claimed elsewhere']);

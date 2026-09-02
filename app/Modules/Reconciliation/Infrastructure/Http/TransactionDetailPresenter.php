@@ -9,7 +9,10 @@ use App\Modules\SharedKernel\Domain\DomainEvent;
 
 final class TransactionDetailPresenter
 {
-    /** @param DomainEvent[] $events */
+    /**
+     * @param  DomainEvent[]  $events
+     * @return array<string, mixed>
+     */
     public static function toPayload(Transaction $transaction, array $events): array
     {
         return [

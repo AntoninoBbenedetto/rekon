@@ -16,8 +16,7 @@ final class ResolveReviewService
     public function __construct(
         private readonly TransactionRepository $repository,
         private readonly TransactionReadModelProjector $projector,
-    ) {
-    }
+    ) {}
 
     public function confirm(TransactionId $id, string $expectedPaymentId, Actor $actor): Transaction
     {

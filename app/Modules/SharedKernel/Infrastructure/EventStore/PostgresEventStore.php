@@ -17,9 +17,7 @@ use RuntimeException;
 final class PostgresEventStore implements EventStore
 {
     /** @param array<string, class-string<DomainEvent>> $eventClassesByType */
-    public function __construct(private readonly array $eventClassesByType)
-    {
-    }
+    public function __construct(private readonly array $eventClassesByType) {}
 
     public function append(string $aggregateId, int $expectedVersion, array $events): void
     {

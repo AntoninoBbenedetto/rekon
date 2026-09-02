@@ -31,11 +31,13 @@ final class MatchTransactionService
 
     private function resolveSingleCandidate(
         Transaction $transaction,
-        ExpectedPayment $candidate,
+        ?ExpectedPayment $candidate,
         Actor $actor,
         string $causationId,
         string $correlationId,
     ): void {
+        assert($candidate instanceof ExpectedPayment);
+
         $money = $transaction->money();
 
         if ($candidate->amount_minor_units === $money->amountMinorUnits && $candidate->currency === $money->currency->value) {

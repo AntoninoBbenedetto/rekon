@@ -1,8 +1,8 @@
 <?php
 
+use App\Modules\Reconciliation\Domain\Transaction;
 use App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection;
 use App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector;
-use App\Modules\Reconciliation\Domain\Transaction;
 use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\Currency;
 use App\Modules\SharedKernel\Domain\IdempotencyKey;
@@ -24,7 +24,7 @@ it('projects a Pending transaction into the read model', function () {
         actor: Actor::apiCaller('caller-1'), causationId: 'c1', correlationId: 'r1',
     );
 
-    (new TransactionReadModelProjector())->project($transaction);
+    (new TransactionReadModelProjector)->project($transaction);
 
     $row = TransactionProjection::query()->find($id->value);
 
@@ -45,7 +45,7 @@ it('overwrites the row on a later projection of the same aggregate', function ()
         idempotencyKey: $key, rawRowChecksum: 'checksum-1',
         actor: Actor::apiCaller('caller-1'), causationId: 'c1', correlationId: 'r1',
     );
-    $projector = new TransactionReadModelProjector();
+    $projector = new TransactionReadModelProjector;
     $projector->project($transaction);
 
     $expectedPaymentId = (string) Str::uuid();

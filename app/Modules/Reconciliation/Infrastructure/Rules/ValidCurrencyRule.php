@@ -12,7 +12,7 @@ final class ValidCurrencyRule implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!is_string($value) || Currency::tryFrom(strtoupper($value)) === null) {
+        if (! is_string($value) || Currency::tryFrom(strtoupper($value)) === null) {
             $fail('The :attribute must be a supported ISO 4217 currency code.');
         }
     }

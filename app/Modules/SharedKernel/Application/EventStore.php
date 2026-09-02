@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\SharedKernel\Application;
 
 use App\Modules\SharedKernel\Domain\DomainEvent;
+use App\Modules\SharedKernel\Domain\Exceptions\ConcurrencyConflictException;
 
 interface EventStore
 {
     /**
-     * @param DomainEvent[] $events
+     * @param  DomainEvent[]  $events
      *
-     * @throws \App\Modules\SharedKernel\Domain\Exceptions\ConcurrencyConflictException
+     * @throws ConcurrencyConflictException
      */
     public function append(string $aggregateId, int $expectedVersion, array $events): void;
 

@@ -25,8 +25,8 @@ final class StatementRowValidator
             ],
             [
                 'reference' => ['required', 'string'],
-                'amount_minor_units' => ['required', new ValidMoneyAmountRule()],
-                'currency' => ['required', new ValidCurrencyRule()],
+                'amount_minor_units' => ['required', new ValidMoneyAmountRule],
+                'currency' => ['required', new ValidCurrencyRule],
                 'statement_date' => ['required', 'date_format:Y-m-d'],
             ],
         );
@@ -35,12 +35,15 @@ final class StatementRowValidator
             return [null, $validator->errors()->all()];
         }
 
+        $statementDate = DateTimeImmutable::createFromFormat('!Y-m-d', $line->statementDate);
+        assert($statementDate instanceof DateTimeImmutable);
+
         $row = new ImportStatementRow(
             rowNumber: $line->rowNumber,
             reference: trim($line->reference),
             amountMinorUnits: (int) $line->amountMinorUnits,
             currency: Currency::from(strtoupper($line->currency)),
-            statementDate: DateTimeImmutable::createFromFormat('!Y-m-d', $line->statementDate),
+            statementDate: $statementDate,
             rawLine: $line->rawLine,
         );
 

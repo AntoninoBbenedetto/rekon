@@ -1,5 +1,7 @@
 # Motore di Riconciliazione Finanziaria
 
+![CI](https://github.com/AntoninoBbenedetto/rekon/actions/workflows/ci.yml/badge.svg)
+
 *[English version](README.md)*
 
 Uno studio di design su come tenere corretto lo stato finanziario in presenza
