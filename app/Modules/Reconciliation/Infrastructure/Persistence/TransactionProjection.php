@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Reconciliation\Infrastructure\Persistence;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon $imported_at
+ */
 class TransactionProjection extends Model
 {
     protected $table = 'transactions_read_model';
