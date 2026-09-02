@@ -96,13 +96,17 @@ it('collapses two real, concurrent OS-process imports of identical statement con
     file_put_contents($csvPath, "reference,amount_minor_units,currency,statement_date\n{$reference},12345,EUR,2026-07-31");
 
     // Due processi php artisan reali (niente pcntl nell'immagine), stessa connessione Postgres reale
-    // (--env=testing forza .env.testing, lo stesso database del processo padre), avviati in modo
-    // asincrono per sovrapporre davvero le due INSERT su event_store(aggregate_id, version).
+    // (--env=testing forza .env.testing) avviati in modo asincrono per sovrapporre davvero le due
+    // INSERT su event_store(aggregate_id, version). Sotto `pest --parallel`, RefreshDatabase sposta
+    // il processo padre su un DB per-worker (`{database}_test_{TOKEN}`, comportamento di default di
+    // Laravel quando la test class usa RefreshDatabase) che .env.testing non conosce: passiamo quindi
+    // esplicitamente il nome DB effettivo del padre come env var, che Symfony Process somma
+    // all'ambiente ereditato (host/porta/credenziali restano identici tra padre e figli).
     $processes = array_map(
         fn (string $actor) => new Process([
             PHP_BINARY, 'artisan', 'reconciliation:import-statement', $csvPath,
             "--actor={$actor}", '--env=testing',
-        ], base_path()),
+        ], base_path(), ['DB_DATABASE' => DB::connection()->getDatabaseName()]),
         ['reviewer-1', 'reviewer-2'],
     );
 
