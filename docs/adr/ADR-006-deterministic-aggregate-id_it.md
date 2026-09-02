@@ -79,7 +79,7 @@ realmente concorrente — e viene gestito come no-op, non come errore.
   namespace UUID e lo schema di hashing. Non è una preoccupazione di
   sicurezza per la v1 (nessun confine di autorizzazione dipende
   dall'inintuibilità dell'ID, e non c'è alcuna autenticazione ancora — vedi
-  [ADR-004](ADR-004-rest-api-only-no-admin-panel_it.md)), ma è una
+  [ADR-008](ADR-008-no-authentication-in-v1_it.md)), ma è una
   considerazione reale se il progetto dovesse mai richiedere identificatori
   di transazione inintuibili.
 - L'identità dell'aggregate è ora accoppiata alla definizione di

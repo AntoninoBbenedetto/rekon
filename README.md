@@ -13,9 +13,11 @@ auditability as structural properties rather than conventions.
 
 ## Status
 
-**Design complete, implementation not started.** This repository currently
-contains the architecture: specs, ADRs, C4 diagrams, and a failure-mode
-analysis. There is no application code yet.
+**Implemented.** The v1 vertical slice described below is built and tested —
+CSV import, matching, manual review resolution, and the REST API are all in
+place, with 95 passing tests covering unit, integration, and end-to-end paths.
+The repository also contains the architecture that shaped it: specs, ADRs,
+C4 diagrams, and a failure-mode analysis.
 
 That order is deliberate. The design already had to correct itself once —
 [ADR-006](docs/adr/ADR-006-deterministic-aggregate-id.md) exists because an
@@ -39,6 +41,21 @@ CSV statement → per-row idempotency key → Transaction aggregate (event-sourc
 Every state transition is a domain event appended to an event store; the
 queryable read model is a disposable projection of that store, never a source
 of truth.
+
+## Getting started
+
+```bash
+cp .env.example .env
+docker compose up -d
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Run the test suite:
+
+```bash
+docker compose exec app php artisan test
+```
 
 ## Reading order
 

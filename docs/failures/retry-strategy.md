@@ -35,11 +35,24 @@ even in the narrow race window where two deliveries of the same job are
 the other gets a version conflict and, on retry, sees the transaction is no
 longer `Pending` and no-ops.
 
+`MatchPendingTransactionJob` sets `$tries = 5` with a growing backoff
+(`[5, 15, 60, 180]` seconds) rather than relying on the queue worker's
+default. The growing delay matters specifically because of
+[ADR-003](../adr/ADR-003-optimistic-concurrency.md): the loser of an
+optimistic-concurrency conflict must give the winner time to commit before
+retrying, or it contends for the same aggregate row and loses again.
+
 ## What is NOT covered in v1
 
-- Poison-message handling (a job that fails deterministically every time
-  and exhausts retries) has no dedicated dead-letter design yet — default
-  queue-worker retry/backoff behavior applies.
+- **A transaction that exhausts all retries stays `Pending` forever, and
+  nothing re-drives it.** `failed()` logs the transaction and correlation
+  id so the failure is *visible* (in `failed_jobs` and the application log),
+  but there is no scheduled sweep that finds stranded `Pending` transactions
+  and requeues them. Visibility is not the same as recovery — this is the
+  gap to close before this mitigation could be called complete.
+- Poison-message handling (a job that fails deterministically every time)
+  has no dedicated dead-letter *processing* — failures land in `failed_jobs`
+  per Laravel's default and are not automatically triaged.
 - No idempotency key at the *job* level (e.g., deduplicating identical
   queued job payloads before execution) — deduplication happens at the
   domain/state level instead, which is sufficient because the domain check
