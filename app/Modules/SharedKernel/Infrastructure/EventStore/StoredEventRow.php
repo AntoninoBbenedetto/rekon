@@ -21,6 +21,5 @@ final class StoredEventRow
         public readonly Actor $actor,
         public readonly string $causationId,
         public readonly string $correlationId,
-    ) {
-    }
+    ) {}
 }

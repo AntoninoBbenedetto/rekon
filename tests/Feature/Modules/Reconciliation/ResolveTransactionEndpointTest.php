@@ -4,7 +4,6 @@ use App\Modules\Reconciliation\Application\ImportStatementService;
 use App\Modules\Reconciliation\Domain\ExpectedPayment;
 use App\Modules\SharedKernel\Domain\Actor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Bus;
 
 uses(RefreshDatabase::class);
 
@@ -95,7 +94,7 @@ it('returns 409 when the transaction is not currently NeedsReview', function () 
 });
 
 it('returns 404 for an unknown transaction id', function () {
-    $response = $this->postJson('/api/transactions/' . (string) Str::uuid() . '/resolve', [
+    $response = $this->postJson('/api/transactions/'.(string) Str::uuid().'/resolve', [
         'action' => 'reject',
         'reason' => 'irrelevant',
     ]);

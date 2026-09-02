@@ -9,8 +9,7 @@ final class Actor
     private function __construct(
         public readonly ActorType $type,
         public readonly ?string $id,
-    ) {
-    }
+    ) {}
 
     public static function system(): self
     {

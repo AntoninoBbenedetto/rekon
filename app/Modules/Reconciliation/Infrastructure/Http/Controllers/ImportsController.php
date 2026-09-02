@@ -14,9 +14,7 @@ use Illuminate\Support\Str;
 
 final class ImportsController extends Controller
 {
-    public function __construct(private readonly ImportStatementService $service)
-    {
-    }
+    public function __construct(private readonly ImportStatementService $service) {}
 
     public function store(ImportStatementRequest $request): JsonResponse
     {

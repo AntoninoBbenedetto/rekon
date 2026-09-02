@@ -16,6 +16,5 @@ final class ImportStatementRow
         public readonly Currency $currency,
         public readonly DateTimeImmutable $statementDate,
         public readonly string $rawLine,
-    ) {
-    }
+    ) {}
 }

@@ -8,9 +8,7 @@ use DateTimeImmutable;
 
 final class IdempotencyKey
 {
-    private function __construct(public readonly string $value)
-    {
-    }
+    private function __construct(public readonly string $value) {}
 
     public static function forStatementRow(
         string $reference,

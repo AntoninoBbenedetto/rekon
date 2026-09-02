@@ -24,12 +24,19 @@ use InvalidArgumentException;
 final class Transaction extends AggregateRoot
 {
     private string $id;
+
     private TransactionState $state;
+
     private Money $money;
+
     private string $reference;
+
     private DateTimeImmutable $statementDate;
+
     private DateTimeImmutable $importedAt;
+
     private ?string $matchedExpectedPaymentId = null;
+
     /** @var string[] */
     private array $candidateExpectedPaymentIds = [];
 
@@ -49,7 +56,7 @@ final class Transaction extends AggregateRoot
 
         $transaction->record(new TransactionImported(
             $id->value,
-            new DateTimeImmutable(),
+            new DateTimeImmutable,
             $actor,
             $causationId,
             $correlationId,
@@ -70,13 +77,13 @@ final class Transaction extends AggregateRoot
         $this->assertState(TransactionState::Pending);
 
         $this->record(new TransactionMatched(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             expectedPaymentId: $expectedPaymentId,
             matchType: 'exact',
         ));
 
         $this->record(new TransactionReconciled(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             expectedPaymentId: $expectedPaymentId,
             resolution: 'auto',
         ));
@@ -87,7 +94,7 @@ final class Transaction extends AggregateRoot
         $this->assertState(TransactionState::Pending);
 
         $this->record(new TransactionMarkedUnmatched(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             reason: 'no_candidate_found',
         ));
     }
@@ -98,7 +105,7 @@ final class Transaction extends AggregateRoot
         $this->assertState(TransactionState::Pending);
 
         $this->record(new TransactionMarkedAmbiguous(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             candidateExpectedPaymentIds: $candidateExpectedPaymentIds,
             reason: $reason,
         ));
@@ -108,12 +115,12 @@ final class Transaction extends AggregateRoot
     {
         $this->assertState(TransactionState::NeedsReview);
 
-        if (!in_array($expectedPaymentId, $this->candidateExpectedPaymentIds, true)) {
+        if (! in_array($expectedPaymentId, $this->candidateExpectedPaymentIds, true)) {
             throw new InvalidResolutionCandidate($expectedPaymentId);
         }
 
         $this->record(new TransactionReconciled(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             expectedPaymentId: $expectedPaymentId,
             resolution: 'manual',
         ));
@@ -128,7 +135,7 @@ final class Transaction extends AggregateRoot
         }
 
         $this->record(new TransactionRejected(
-            $this->id, new DateTimeImmutable(), $actor, $causationId, $correlationId,
+            $this->id, new DateTimeImmutable, $actor, $causationId, $correlationId,
             reason: $reason,
         ));
     }
@@ -183,7 +190,7 @@ final class Transaction extends AggregateRoot
             $event instanceof TransactionMarkedAmbiguous => $this->applyMarkedAmbiguous($event),
             $event instanceof TransactionReconciled => $this->applyReconciled($event),
             $event instanceof TransactionRejected => $this->state = TransactionState::Rejected,
-            default => throw new InvalidArgumentException('Unknown event: ' . $event::class),
+            default => throw new InvalidArgumentException('Unknown event: '.$event::class),
         };
     }
 
@@ -224,6 +231,6 @@ final class Transaction extends AggregateRoot
 
     protected static function createEmpty(): static
     {
-        return new self();
+        return new self;
     }
 }

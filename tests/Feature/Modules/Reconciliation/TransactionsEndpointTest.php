@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Reconciliation\Application\ImportStatementService;
+use App\Modules\SharedKernel\Domain\Actor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -10,7 +11,7 @@ uses(RefreshDatabase::class);
 it('lists transactions, optionally filtered by state', function () {
     Queue::fake();
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31\nREF-2,500,EUR,2026-07-31";
-    app(ImportStatementService::class)->import($csv, \App\Modules\SharedKernel\Domain\Actor::system(), (string) Str::uuid());
+    app(ImportStatementService::class)->import($csv, Actor::system(), (string) Str::uuid());
 
     $response = $this->getJson('/api/transactions');
     $response->assertOk()->assertJsonCount(2, 'data');
@@ -25,7 +26,7 @@ it('lists transactions, optionally filtered by state', function () {
 it('shows a transaction with its full event history', function () {
     Queue::fake();
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31";
-    $summary = app(ImportStatementService::class)->import($csv, \App\Modules\SharedKernel\Domain\Actor::system(), (string) Str::uuid());
+    $summary = app(ImportStatementService::class)->import($csv, Actor::system(), (string) Str::uuid());
     $id = $summary->transactionIds[0];
 
     $response = $this->getJson("/api/transactions/{$id}");
@@ -38,7 +39,7 @@ it('shows a transaction with its full event history', function () {
 });
 
 it('returns 404 for an unknown transaction id', function () {
-    $response = $this->getJson('/api/transactions/' . (string) Str::uuid());
+    $response = $this->getJson('/api/transactions/'.(string) Str::uuid());
 
     $response->assertStatus(404);
 });

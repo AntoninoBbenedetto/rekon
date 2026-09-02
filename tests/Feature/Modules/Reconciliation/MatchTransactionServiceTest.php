@@ -38,14 +38,14 @@ it('auto-reconciles when exactly one candidate matches the amount exactly', func
     ExpectedPayment::factory()->create(['reference' => 'REF-1', 'amount_minor_units' => 12345, 'currency' => 'EUR']);
 
     $transaction = pendingTransaction();
-    (new MatchTransactionService())->match($transaction, Actor::system(), 'c2', 'r1');
+    (new MatchTransactionService)->match($transaction, Actor::system(), 'c2', 'r1');
 
     expect($transaction->state())->toBe(TransactionState::Reconciled);
 });
 
 it('marks Unmatched when there is no candidate', function () {
     $transaction = pendingTransaction();
-    (new MatchTransactionService())->match($transaction, Actor::system(), 'c2', 'r1');
+    (new MatchTransactionService)->match($transaction, Actor::system(), 'c2', 'r1');
 
     expect($transaction->state())->toBe(TransactionState::Unmatched);
 });
@@ -54,7 +54,7 @@ it('marks NeedsReview with reason partial_amount_match when the single candidate
     ExpectedPayment::factory()->create(['reference' => 'REF-1', 'amount_minor_units' => 999, 'currency' => 'EUR']);
 
     $transaction = pendingTransaction();
-    (new MatchTransactionService())->match($transaction, Actor::system(), 'c2', 'r1');
+    (new MatchTransactionService)->match($transaction, Actor::system(), 'c2', 'r1');
 
     expect($transaction->state())->toBe(TransactionState::NeedsReview);
 });
@@ -64,7 +64,7 @@ it('marks NeedsReview with reason multiple_candidates when several candidates sh
     ExpectedPayment::factory()->create(['reference' => 'REF-1', 'amount_minor_units' => 999, 'currency' => 'EUR']);
 
     $transaction = pendingTransaction();
-    (new MatchTransactionService())->match($transaction, Actor::system(), 'c2', 'r1');
+    (new MatchTransactionService)->match($transaction, Actor::system(), 'c2', 'r1');
 
     expect($transaction->state())->toBe(TransactionState::NeedsReview)
         ->and($transaction->candidateExpectedPaymentIds())->toHaveCount(2);

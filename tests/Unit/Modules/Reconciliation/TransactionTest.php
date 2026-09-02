@@ -1,5 +1,11 @@
 <?php
 
+use App\Modules\Reconciliation\Domain\Events\TransactionImported;
+use App\Modules\Reconciliation\Domain\Events\TransactionMatched;
+use App\Modules\Reconciliation\Domain\Events\TransactionReconciled;
+use App\Modules\Reconciliation\Domain\Events\TransactionRejected;
+use App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition;
+use App\Modules\Reconciliation\Domain\Exceptions\InvalidResolutionCandidate;
 use App\Modules\Reconciliation\Domain\Transaction;
 use App\Modules\Reconciliation\Domain\TransactionState;
 use App\Modules\SharedKernel\Domain\Actor;
@@ -42,7 +48,7 @@ it('is born Pending and records exactly one TransactionImported event', function
 
     $events = $transaction->releaseEvents();
     expect($events)->toHaveCount(1)
-        ->and($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionImported::class);
+        ->and($events[0])->toBeInstanceOf(TransactionImported::class);
 });
 
 it('auto-reconciles on an exact match', function () {
@@ -51,14 +57,14 @@ it('auto-reconciles on an exact match', function () {
 
     $transaction->markMatched('ep-1', Actor::system(), 'c2', 'r1');
 
-    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::Reconciled)
+    expect($transaction->state())->toBe(TransactionState::Reconciled)
         ->and($transaction->matchedExpectedPaymentId())->toBe('ep-1')
         ->and($transaction->version())->toBe(3);
 
     $events = $transaction->releaseEvents();
     expect($events)->toHaveCount(2)
-        ->and($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionMatched::class)
-        ->and($events[1])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionReconciled::class)
+        ->and($events[0])->toBeInstanceOf(TransactionMatched::class)
+        ->and($events[1])->toBeInstanceOf(TransactionReconciled::class)
         ->and($events[1]->resolution)->toBe('auto');
 });
 
@@ -68,7 +74,7 @@ it('becomes Unmatched when no candidate is found', function () {
 
     $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
 
-    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::Unmatched);
+    expect($transaction->state())->toBe(TransactionState::Unmatched);
 });
 
 it('becomes NeedsReview with recorded candidates when ambiguous', function () {
@@ -77,7 +83,7 @@ it('becomes NeedsReview with recorded candidates when ambiguous', function () {
 
     $transaction->markAmbiguous(['ep-1', 'ep-2'], 'multiple_candidates', Actor::system(), 'c2', 'r1');
 
-    expect($transaction->state())->toBe(\App\Modules\Reconciliation\Domain\TransactionState::NeedsReview)
+    expect($transaction->state())->toBe(TransactionState::NeedsReview)
         ->and($transaction->candidateExpectedPaymentIds())->toBe(['ep-1', 'ep-2']);
 });
 
@@ -86,7 +92,7 @@ it('rejects markMatched when the transaction is not Pending', function () {
     $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
 
     expect(fn () => $transaction->markMatched('ep-1', Actor::system(), 'c3', 'r1'))
-        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition::class);
+        ->toThrow(IllegalTransactionStateTransition::class);
 });
 
 function needsReviewTransaction(): Transaction
@@ -115,7 +121,7 @@ it('rejects confirming a candidate that was never recorded', function () {
     $transaction = needsReviewTransaction();
 
     expect(fn () => $transaction->resolveByConfirming('ep-not-a-candidate', Actor::apiCaller('reviewer-1'), 'c3', 'r2'))
-        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\InvalidResolutionCandidate::class);
+        ->toThrow(InvalidResolutionCandidate::class);
 });
 
 it('rejects when the transaction is not NeedsReview', function () {
@@ -123,7 +129,7 @@ it('rejects when the transaction is not NeedsReview', function () {
     $transaction->markUnmatched(Actor::system(), 'c2', 'r1');
 
     expect(fn () => $transaction->resolveByConfirming('ep-1', Actor::apiCaller('reviewer-1'), 'c3', 'r2'))
-        ->toThrow(\App\Modules\Reconciliation\Domain\Exceptions\IllegalTransactionStateTransition::class);
+        ->toThrow(IllegalTransactionStateTransition::class);
 });
 
 it('rejects with a reason', function () {
@@ -134,7 +140,7 @@ it('rejects with a reason', function () {
     expect($transaction->state())->toBe(TransactionState::Rejected);
 
     $events = $transaction->releaseEvents();
-    expect($events[0])->toBeInstanceOf(\App\Modules\Reconciliation\Domain\Events\TransactionRejected::class)
+    expect($events[0])->toBeInstanceOf(TransactionRejected::class)
         ->and($events[0]->reason)->toBe('duplicate payment claimed elsewhere');
 });
 

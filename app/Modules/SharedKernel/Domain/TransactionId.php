@@ -8,9 +8,7 @@ use Ramsey\Uuid\Uuid;
 
 final class TransactionId
 {
-    private function __construct(public readonly string $value)
-    {
-    }
+    private function __construct(public readonly string $value) {}
 
     public static function deriveFrom(IdempotencyKey $key): self
     {

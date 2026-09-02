@@ -25,8 +25,8 @@ final class StatementRowValidator
             ],
             [
                 'reference' => ['required', 'string'],
-                'amount_minor_units' => ['required', new ValidMoneyAmountRule()],
-                'currency' => ['required', new ValidCurrencyRule()],
+                'amount_minor_units' => ['required', new ValidMoneyAmountRule],
+                'currency' => ['required', new ValidCurrencyRule],
                 'statement_date' => ['required', 'date_format:Y-m-d'],
             ],
         );

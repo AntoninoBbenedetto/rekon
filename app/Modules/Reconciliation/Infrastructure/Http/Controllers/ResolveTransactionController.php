@@ -23,8 +23,7 @@ final class ResolveTransactionController extends Controller
     public function __construct(
         private readonly ResolveReviewService $service,
         private readonly EventStore $eventStore,
-    ) {
-    }
+    ) {}
 
     public function store(string $id, ResolveTransactionRequest $request): JsonResponse
     {

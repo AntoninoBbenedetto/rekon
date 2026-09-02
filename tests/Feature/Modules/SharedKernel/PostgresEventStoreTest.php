@@ -57,8 +57,8 @@ it('appends events and loads them back in order', function () {
     $correlationId = (string) Str::uuid();
 
     $store->append($aggregateId, 0, [
-        new StoreFakeEvent($aggregateId, new DateTimeImmutable(), Actor::system(), (string) Str::uuid(), $correlationId, 'first'),
-        new StoreFakeEvent($aggregateId, new DateTimeImmutable(), Actor::system(), (string) Str::uuid(), $correlationId, 'second'),
+        new StoreFakeEvent($aggregateId, new DateTimeImmutable, Actor::system(), (string) Str::uuid(), $correlationId, 'first'),
+        new StoreFakeEvent($aggregateId, new DateTimeImmutable, Actor::system(), (string) Str::uuid(), $correlationId, 'second'),
     ]);
 
     $events = $store->loadStream($aggregateId);
@@ -74,11 +74,11 @@ it('rejects an append whose expected version does not match', function () {
     $aggregateId = (string) Str::uuid();
 
     $store->append($aggregateId, 0, [
-        new StoreFakeEvent($aggregateId, new DateTimeImmutable(), Actor::system(), (string) Str::uuid(), (string) Str::uuid()),
+        new StoreFakeEvent($aggregateId, new DateTimeImmutable, Actor::system(), (string) Str::uuid(), (string) Str::uuid()),
     ]);
 
     expect(fn () => $store->append($aggregateId, 0, [
-        new StoreFakeEvent($aggregateId, new DateTimeImmutable(), Actor::system(), (string) Str::uuid(), (string) Str::uuid()),
+        new StoreFakeEvent($aggregateId, new DateTimeImmutable, Actor::system(), (string) Str::uuid(), (string) Str::uuid()),
     ]))->toThrow(ConcurrencyConflictException::class);
 });
 

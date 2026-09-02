@@ -7,8 +7,8 @@ namespace App\Modules\Reconciliation\Application;
 final class ImportSummary
 {
     /**
-     * @param string[] $transactionIds
-     * @param array<int, array{row_number: int, errors: string[]}> $invalidRows
+     * @param  string[]  $transactionIds
+     * @param  array<int, array{row_number: int, errors: string[]}>  $invalidRows
      */
     public function __construct(
         public readonly int $rowsReceived,
@@ -17,6 +17,5 @@ final class ImportSummary
         public readonly int $rowsInvalid,
         public readonly array $invalidRows,
         public readonly array $transactionIds,
-    ) {
-    }
+    ) {}
 }
