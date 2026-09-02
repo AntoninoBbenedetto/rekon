@@ -9,6 +9,9 @@ use DateTimeImmutable;
 
 final class StoredEventRow
 {
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function __construct(
         public readonly string $aggregateId,
         public readonly int $version,

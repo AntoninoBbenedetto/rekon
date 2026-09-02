@@ -59,7 +59,7 @@ final class ImportStatementService
         $alreadyImportedCount = 0;
 
         foreach ($groups as $rowsInGroup) {
-            foreach (array_values($rowsInGroup) as $occurrenceIndex => $row) {
+            foreach ($rowsInGroup as $occurrenceIndex => $row) {
                 $idempotencyKey = IdempotencyKey::forStatementRow(
                     $row->reference,
                     $row->amountMinorUnits,
