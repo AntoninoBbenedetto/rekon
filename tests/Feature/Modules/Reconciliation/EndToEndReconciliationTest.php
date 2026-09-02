@@ -10,6 +10,8 @@ use App\Modules\SharedKernel\Domain\TransactionId;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
@@ -82,4 +84,74 @@ it('rejects the loser of two concurrent resolutions with a ConcurrencyConflictEx
 
     // Lo stato persistito riflette il vincitore della race, non il perdente.
     expect($repository->find($transactionId)->state())->toBe(TransactionState::Reconciled);
+});
+
+it('collapses two real, concurrent OS-process imports of identical statement content into a single aggregate', function () {
+    // Reference unica per run: le insert dei due processi figli sono commit reali su connessioni
+    // separate, quindi non vengono annullate dal rollback della transazione RefreshDatabase del
+    // processo padre. Derivando un aggregate id mai usato prima si evita qualunque collisione di
+    // valore con il residuo del proprio run precedente o con altri test del file che riusano REF-1.
+    $reference = 'REF-CONCURRENT-'.Str::uuid();
+    $csvPath = storage_path('app/concurrent-import-test-'.Str::uuid().'.csv');
+    file_put_contents($csvPath, "reference,amount_minor_units,currency,statement_date\n{$reference},12345,EUR,2026-07-31");
+
+    // Due processi php artisan reali (niente pcntl nell'immagine), stessa connessione Postgres reale
+    // (--env=testing forza .env.testing) avviati in modo asincrono per sovrapporre davvero le due
+    // INSERT su event_store(aggregate_id, version). Sotto `pest --parallel`, RefreshDatabase sposta
+    // il processo padre su un DB per-worker (`{database}_test_{TOKEN}`, comportamento di default di
+    // Laravel quando la test class usa RefreshDatabase) che .env.testing non conosce: passiamo quindi
+    // esplicitamente il nome DB effettivo del padre come env var, che Symfony Process somma
+    // all'ambiente ereditato (host/porta/credenziali restano identici tra padre e figli).
+    $processes = array_map(
+        fn (string $actor) => new Process([
+            PHP_BINARY, 'artisan', 'reconciliation:import-statement', $csvPath,
+            "--actor={$actor}", '--env=testing',
+        ], base_path(), ['DB_DATABASE' => DB::connection()->getDatabaseName()]),
+        ['reviewer-1', 'reviewer-2'],
+    );
+
+    foreach ($processes as $process) {
+        $process->start();
+    }
+    foreach ($processes as $process) {
+        $process->wait();
+    }
+
+    unlink($csvPath);
+
+    foreach ($processes as $process) {
+        expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+    }
+
+    $outcomes = array_map(fn (Process $process) => json_decode($process->getOutput(), true), $processes);
+    $rowsImported = array_column($outcomes, 'rows_imported');
+    $rowsAlreadyImported = array_column($outcomes, 'rows_already_imported');
+
+    expect($rowsImported)->toEqualCanonicalizing([1, 0])
+        ->and($rowsAlreadyImported)->toEqualCanonicalizing([0, 1]);
+
+    $transactionId = collect($outcomes)->firstWhere('rows_imported', 1)['transaction_ids'][0];
+
+    // Connessione PDO indipendente, non gestita da RefreshDatabase: le due connessioni figlie hanno
+    // già fatto commit reale, quindi il cleanup deve avvenire fuori dalla transazione (rolled back)
+    // del processo padre, altrimenti le righe restano visibili ad altri test dello stesso processo
+    // che fanno assert su conteggi assoluti della tabella (non filtrati per reference).
+    $rawConnection = new PDO(
+        sprintf(
+            'pgsql:host=%s;port=%s;dbname=%s',
+            config('database.connections.pgsql.host'),
+            config('database.connections.pgsql.port'),
+            config('database.connections.pgsql.database'),
+        ),
+        config('database.connections.pgsql.username'),
+        config('database.connections.pgsql.password'),
+    );
+
+    try {
+        expect(DB::table('event_store')->where('aggregate_id', $transactionId)->where('version', 1)->count())->toBe(1)
+            ->and(DB::table('transactions_read_model')->where('reference', $reference)->count())->toBe(1);
+    } finally {
+        $rawConnection->prepare('delete from event_store where aggregate_id = ?')->execute([$transactionId]);
+        $rawConnection->prepare('delete from transactions_read_model where reference = ?')->execute([$reference]);
+    }
 });
