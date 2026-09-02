@@ -5,7 +5,7 @@ parameters:
     paths:
         - app/Modules
         - app/Providers
-    level: 6
+    level: 7
     excludePaths:
         - app/Http/Controllers/Controller.php
         - app/Models/User.php

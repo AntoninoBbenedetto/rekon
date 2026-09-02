@@ -21,6 +21,10 @@ final class ImportsController extends Controller
     public function store(ImportStatementRequest $request): JsonResponse
     {
         $csvContents = $request->file('file')->get();
+        if ($csvContents === false) {
+            throw new \RuntimeException('Unable to read the uploaded file contents.');
+        }
+
         $actor = Actor::apiCaller($request->header('X-Actor-Id', 'unknown'));
         $correlationId = (string) Str::uuid();
 

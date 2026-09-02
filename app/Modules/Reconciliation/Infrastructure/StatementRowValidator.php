@@ -35,12 +35,15 @@ final class StatementRowValidator
             return [null, $validator->errors()->all()];
         }
 
+        $statementDate = DateTimeImmutable::createFromFormat('!Y-m-d', $line->statementDate);
+        assert($statementDate instanceof DateTimeImmutable);
+
         $row = new ImportStatementRow(
             rowNumber: $line->rowNumber,
             reference: trim($line->reference),
             amountMinorUnits: (int) $line->amountMinorUnits,
             currency: Currency::from(strtoupper($line->currency)),
-            statementDate: DateTimeImmutable::createFromFormat('!Y-m-d', $line->statementDate),
+            statementDate: $statementDate,
             rawLine: $line->rawLine,
         );
 
