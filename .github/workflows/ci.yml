@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main, architecture]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php: ['8.3']
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rekon
+          POSTGRES_PASSWORD: rekon
+          POSTGRES_DB: rekon_testing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U rekon"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: rekon_testing
+      DB_USERNAME: rekon
+      DB_PASSWORD: rekon
+      QUEUE_CONNECTION: sync
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Directory permissions
+        run: |
+          sudo chown -R $USER:$USER storage bootstrap/cache
+          chmod -R 775 storage bootstrap/cache
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, pgsql, zip, bcmath, redis
+          coverage: pcov
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Generate app key
+        run: php artisan key:generate --env=testing
+
+      - name: Run migrations
+        run: php artisan migrate --force --env=testing
+
+      - name: Run Pest
+        run: vendor/bin/pest --parallel --coverage --min=70
+
+  static-analysis:
+    name: PHPStan
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: rekon_testing
+      DB_USERNAME: rekon
+      DB_PASSWORD: rekon
+      QUEUE_CONNECTION: sync
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, pgsql, zip, bcmath, redis
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Generate app key
+        run: php artisan key:generate --env=testing
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+  code-style:
+    name: Pint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run Pint (dry run)
+        run: vendor/bin/pint --test
