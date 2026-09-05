@@ -1,0 +1,870 @@
+{
+    "item": [
+        {
+            "name": "api",
+            "description": "",
+            "item": [
+                {
+                    "name": "imports",
+                    "description": "",
+                    "item": [
+                        {
+                            "id": "e9e181a7-ff83-43bc-ba35-f7d946dca22e",
+                            "name": "Import a CSV bank statement",
+                            "request": {
+                                "name": "Import a CSV bank statement",
+                                "description": {
+                                    "content": "Processes the statement row by row, synchronously, within the request. Rows that collide on an already-imported idempotency key are reported as already imported, not as an error. Rows with bad content are reported as invalid but do not fail the whole request.",
+                                    "type": "text/plain"
+                                },
+                                "url": {
+                                    "path": [
+                                        "api",
+                                        "imports"
+                                    ],
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "query": [],
+                                    "variable": []
+                                },
+                                "header": [
+                                    {
+                                        "disabled": false,
+                                        "description": {
+                                            "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                            "type": "text/plain"
+                                        },
+                                        "key": "X-Actor-Id",
+                                        "value": "unknown"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "multipart/form-data"
+                                    },
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "method": "POST",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "description": {
+                                                "content": "(Required) CSV file with columns reference,amount_minor_units,currency,statement_date (ADR-005).",
+                                                "type": "text/plain"
+                                            },
+                                            "key": "file",
+                                            "type": "file"
+                                        }
+                                    ]
+                                },
+                                "auth": null
+                            },
+                            "response": [
+                                {
+                                    "id": "c6f7a69b-e5a3-4174-8484-8fb7b5eeb992",
+                                    "name": "Statement processed (possibly with zero new rows imported).",
+                                    "originalRequest": {
+                                        "url": {
+                                            "path": [
+                                                "api",
+                                                "imports"
+                                            ],
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "query": [],
+                                            "variable": []
+                                        },
+                                        "header": [
+                                            {
+                                                "disabled": false,
+                                                "description": {
+                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                    "type": "text/plain"
+                                                },
+                                                "key": "X-Actor-Id",
+                                                "value": "unknown"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "multipart/form-data"
+                                            },
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "method": "POST",
+                                        "body": {
+                                            "mode": "formdata",
+                                            "formdata": [
+                                                {
+                                                    "description": {
+                                                        "content": "(Required) CSV file with columns reference,amount_minor_units,currency,statement_date (ADR-005).",
+                                                        "type": "text/plain"
+                                                    },
+                                                    "key": "file",
+                                                    "type": "file"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "header": [
+                                        {
+                                            "key": "Content-Type",
+                                            "value": "application/json"
+                                        }
+                                    ],
+                                    "body": "{\n  \"correlation_id\": \"<uuid>\",\n  \"rows_received\": \"<integer>\",\n  \"rows_imported\": \"<integer>\",\n  \"rows_already_imported\": \"<integer>\",\n  \"rows_invalid\": \"<integer>\",\n  \"invalid_rows\": [\n    \"\",\n    \"\"\n  ],\n  \"transaction_ids\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                                    "cookie": [],
+                                    "_postman_previewlanguage": "json"
+                                },
+                                {
+                                    "id": "9139a1e3-63ce-4d74-b07c-414387aaba06",
+                                    "name": "The CSV file is structurally invalid (e.g. missing columns).",
+                                    "originalRequest": {
+                                        "url": {
+                                            "path": [
+                                                "api",
+                                                "imports"
+                                            ],
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "query": [],
+                                            "variable": []
+                                        },
+                                        "header": [
+                                            {
+                                                "disabled": false,
+                                                "description": {
+                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                    "type": "text/plain"
+                                                },
+                                                "key": "X-Actor-Id",
+                                                "value": "unknown"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "multipart/form-data"
+                                            },
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "method": "POST",
+                                        "body": {
+                                            "mode": "formdata",
+                                            "formdata": [
+                                                {
+                                                    "description": {
+                                                        "content": "(Required) CSV file with columns reference,amount_minor_units,currency,statement_date (ADR-005).",
+                                                        "type": "text/plain"
+                                                    },
+                                                    "key": "file",
+                                                    "type": "file"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
+                                    "code": 422,
+                                    "header": [
+                                        {
+                                            "key": "Content-Type",
+                                            "value": "application/json"
+                                        }
+                                    ],
+                                    "body": "{\n  \"errors\": [\n    \"\",\n    \"\"\n  ]\n}",
+                                    "cookie": [],
+                                    "_postman_previewlanguage": "json"
+                                }
+                            ],
+                            "event": [],
+                            "protocolProfileBehavior": {
+                                "disableBodyPruning": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "transactions",
+                    "description": "",
+                    "item": [
+                        {
+                            "id": "982c92e4-6c20-4a7b-a2e1-bd4fec065e8c",
+                            "name": "List transactions",
+                            "request": {
+                                "name": "List transactions",
+                                "description": {},
+                                "url": {
+                                    "path": [
+                                        "api",
+                                        "transactions"
+                                    ],
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "query": [
+                                        {
+                                            "disabled": false,
+                                            "description": {
+                                                "content": "Filter by transaction state. Omitted = all states. (This can only be one of Pending,Matched,Unmatched,NeedsReview,Reconciled,Rejected)",
+                                                "type": "text/plain"
+                                            },
+                                            "key": "state",
+                                            "value": "Matched"
+                                        }
+                                    ],
+                                    "variable": []
+                                },
+                                "header": [
+                                    {
+                                        "disabled": false,
+                                        "description": {
+                                            "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                            "type": "text/plain"
+                                        },
+                                        "key": "X-Actor-Id",
+                                        "value": "unknown"
+                                    },
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "method": "GET",
+                                "body": {},
+                                "auth": null
+                            },
+                            "response": [
+                                {
+                                    "id": "b7d31919-4ced-4e20-8b2e-6bdf159e4de2",
+                                    "name": "Transactions matching the filter, ordered by import time.",
+                                    "originalRequest": {
+                                        "url": {
+                                            "path": [
+                                                "api",
+                                                "transactions"
+                                            ],
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "disabled": false,
+                                                    "description": {
+                                                        "content": "Filter by transaction state. Omitted = all states. (This can only be one of Pending,Matched,Unmatched,NeedsReview,Reconciled,Rejected)",
+                                                        "type": "text/plain"
+                                                    },
+                                                    "key": "state",
+                                                    "value": "Matched"
+                                                }
+                                            ],
+                                            "variable": []
+                                        },
+                                        "header": [
+                                            {
+                                                "disabled": false,
+                                                "description": {
+                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                    "type": "text/plain"
+                                                },
+                                                "key": "X-Actor-Id",
+                                                "value": "unknown"
+                                            },
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "method": "GET",
+                                        "body": {}
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "header": [
+                                        {
+                                            "key": "Content-Type",
+                                            "value": "application/json"
+                                        }
+                                    ],
+                                    "body": "{\n  \"data\": [\n    {\n      \"id\": \"<uuid>\",\n      \"state\": \"Rejected\",\n      \"amount_minor_units\": \"<integer>\",\n      \"currency\": \"<string>\",\n      \"reference\": \"<string>\",\n      \"statement_date\": \"<date>\",\n      \"imported_at\": \"<dateTime>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"state\": \"Unmatched\",\n      \"amount_minor_units\": \"<integer>\",\n      \"currency\": \"<string>\",\n      \"reference\": \"<string>\",\n      \"statement_date\": \"<date>\",\n      \"imported_at\": \"<dateTime>\"\n    }\n  ]\n}",
+                                    "cookie": [],
+                                    "_postman_previewlanguage": "json"
+                                }
+                            ],
+                            "event": [],
+                            "protocolProfileBehavior": {
+                                "disableBodyPruning": true
+                            }
+                        },
+                        {
+                            "name": "{id}",
+                            "description": "",
+                            "item": [
+                                {
+                                    "id": "f46d3092-dd0e-4bae-9a5d-52064da071bd",
+                                    "name": "Get a transaction's current state and full event history",
+                                    "request": {
+                                        "name": "Get a transaction's current state and full event history",
+                                        "description": {
+                                            "content": "Doubles as the audit trail view: `history` is the full ordered event stream for the aggregate.",
+                                            "type": "text/plain"
+                                        },
+                                        "url": {
+                                            "path": [
+                                                "api",
+                                                "transactions",
+                                                ":id"
+                                            ],
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "query": [],
+                                            "variable": [
+                                                {
+                                                    "type": "any",
+                                                    "value": "<uuid>",
+                                                    "key": "id",
+                                                    "disabled": false,
+                                                    "description": {
+                                                        "content": "(Required) ",
+                                                        "type": "text/plain"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "header": [
+                                            {
+                                                "disabled": false,
+                                                "description": {
+                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                    "type": "text/plain"
+                                                },
+                                                "key": "X-Actor-Id",
+                                                "value": "unknown"
+                                            },
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json"
+                                            }
+                                        ],
+                                        "method": "GET",
+                                        "body": {},
+                                        "auth": null
+                                    },
+                                    "response": [
+                                        {
+                                            "id": "a6a8a6bd-b68b-490a-87fd-f2a9e4b39a4b",
+                                            "name": "Transaction detail.",
+                                            "originalRequest": {
+                                                "url": {
+                                                    "path": [
+                                                        "api",
+                                                        "transactions",
+                                                        ":id"
+                                                    ],
+                                                    "host": [
+                                                        "{{baseUrl}}"
+                                                    ],
+                                                    "query": [],
+                                                    "variable": [
+                                                        {
+                                                            "disabled": false,
+                                                            "description": {
+                                                                "content": "(Required) ",
+                                                                "type": "text/plain"
+                                                            },
+                                                            "type": "any",
+                                                            "value": "<uuid>",
+                                                            "key": "id"
+                                                        }
+                                                    ]
+                                                },
+                                                "header": [
+                                                    {
+                                                        "disabled": false,
+                                                        "description": {
+                                                            "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                            "type": "text/plain"
+                                                        },
+                                                        "key": "X-Actor-Id",
+                                                        "value": "unknown"
+                                                    },
+                                                    {
+                                                        "key": "Accept",
+                                                        "value": "application/json"
+                                                    }
+                                                ],
+                                                "method": "GET",
+                                                "body": {}
+                                            },
+                                            "status": "OK",
+                                            "code": 200,
+                                            "header": [
+                                                {
+                                                    "key": "Content-Type",
+                                                    "value": "application/json"
+                                                }
+                                            ],
+                                            "body": "{\n  \"id\": \"<uuid>\",\n  \"state\": \"Rejected\",\n  \"amount_minor_units\": \"<integer>\",\n  \"currency\": \"<string>\",\n  \"reference\": \"<string>\",\n  \"version\": \"<integer>\",\n  \"history\": [\n    {\n      \"event_type\": \"<string>\",\n      \"occurred_at\": \"<dateTime>\",\n      \"actor\": {\n        \"type\": \"api_caller\",\n        \"id\": \"<string>\"\n      },\n      \"causation_id\": \"<uuid>\",\n      \"correlation_id\": \"<uuid>\",\n      \"payload\": {}\n    },\n    {\n      \"event_type\": \"<string>\",\n      \"occurred_at\": \"<dateTime>\",\n      \"actor\": {\n        \"type\": \"system\",\n        \"id\": \"<string>\"\n      },\n      \"causation_id\": \"<uuid>\",\n      \"correlation_id\": \"<uuid>\",\n      \"payload\": {}\n    }\n  ]\n}",
+                                            "cookie": [],
+                                            "_postman_previewlanguage": "json"
+                                        },
+                                        {
+                                            "id": "25561c9d-217f-4d8a-93d9-932f5b432873",
+                                            "name": "No aggregate exists for `{id}`.",
+                                            "originalRequest": {
+                                                "url": {
+                                                    "path": [
+                                                        "api",
+                                                        "transactions",
+                                                        ":id"
+                                                    ],
+                                                    "host": [
+                                                        "{{baseUrl}}"
+                                                    ],
+                                                    "query": [],
+                                                    "variable": [
+                                                        {
+                                                            "disabled": false,
+                                                            "description": {
+                                                                "content": "(Required) ",
+                                                                "type": "text/plain"
+                                                            },
+                                                            "type": "any",
+                                                            "value": "<uuid>",
+                                                            "key": "id"
+                                                        }
+                                                    ]
+                                                },
+                                                "header": [
+                                                    {
+                                                        "disabled": false,
+                                                        "description": {
+                                                            "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                            "type": "text/plain"
+                                                        },
+                                                        "key": "X-Actor-Id",
+                                                        "value": "unknown"
+                                                    },
+                                                    {
+                                                        "key": "Accept",
+                                                        "value": "application/json"
+                                                    }
+                                                ],
+                                                "method": "GET",
+                                                "body": {}
+                                            },
+                                            "status": "Not Found",
+                                            "code": 404,
+                                            "header": [
+                                                {
+                                                    "key": "Content-Type",
+                                                    "value": "application/json"
+                                                }
+                                            ],
+                                            "body": "{\n  \"message\": \"<string>\"\n}",
+                                            "cookie": [],
+                                            "_postman_previewlanguage": "json"
+                                        }
+                                    ],
+                                    "event": [],
+                                    "protocolProfileBehavior": {
+                                        "disableBodyPruning": true
+                                    }
+                                },
+                                {
+                                    "name": "resolve",
+                                    "description": "",
+                                    "item": [
+                                        {
+                                            "id": "709469bc-dab0-4889-9d75-fd0e19b5b0bb",
+                                            "name": "Resolve a NeedsReview transaction",
+                                            "request": {
+                                                "name": "Resolve a NeedsReview transaction",
+                                                "description": {
+                                                    "content": "Only valid when the transaction is currently in NeedsReview.",
+                                                    "type": "text/plain"
+                                                },
+                                                "url": {
+                                                    "path": [
+                                                        "api",
+                                                        "transactions",
+                                                        ":id",
+                                                        "resolve"
+                                                    ],
+                                                    "host": [
+                                                        "{{baseUrl}}"
+                                                    ],
+                                                    "query": [],
+                                                    "variable": [
+                                                        {
+                                                            "type": "any",
+                                                            "value": "<uuid>",
+                                                            "key": "id",
+                                                            "disabled": false,
+                                                            "description": {
+                                                                "content": "(Required) ",
+                                                                "type": "text/plain"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                "header": [
+                                                    {
+                                                        "disabled": false,
+                                                        "description": {
+                                                            "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                            "type": "text/plain"
+                                                        },
+                                                        "key": "X-Actor-Id",
+                                                        "value": "unknown"
+                                                    },
+                                                    {
+                                                        "key": "Content-Type",
+                                                        "value": "application/json"
+                                                    },
+                                                    {
+                                                        "key": "Accept",
+                                                        "value": "application/json"
+                                                    }
+                                                ],
+                                                "method": "POST",
+                                                "body": {
+                                                    "mode": "raw",
+                                                    "raw": "{\n  \"action\": \"confirm\",\n  \"expected_payment_id\": \"<uuid>\"\n}",
+                                                    "options": {
+                                                        "raw": {
+                                                            "headerFamily": "json",
+                                                            "language": "json"
+                                                        }
+                                                    }
+                                                },
+                                                "auth": null
+                                            },
+                                            "response": [
+                                                {
+                                                    "id": "c54ad446-bf16-4b20-848e-1d4c2da0150c",
+                                                    "name": "Transaction resolved; same shape as GET /transactions/{id}.",
+                                                    "originalRequest": {
+                                                        "url": {
+                                                            "path": [
+                                                                "api",
+                                                                "transactions",
+                                                                ":id",
+                                                                "resolve"
+                                                            ],
+                                                            "host": [
+                                                                "{{baseUrl}}"
+                                                            ],
+                                                            "query": [],
+                                                            "variable": [
+                                                                {
+                                                                    "disabled": false,
+                                                                    "description": {
+                                                                        "content": "(Required) ",
+                                                                        "type": "text/plain"
+                                                                    },
+                                                                    "type": "any",
+                                                                    "value": "<uuid>",
+                                                                    "key": "id"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "header": [
+                                                            {
+                                                                "disabled": false,
+                                                                "description": {
+                                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                                    "type": "text/plain"
+                                                                },
+                                                                "key": "X-Actor-Id",
+                                                                "value": "unknown"
+                                                            },
+                                                            {
+                                                                "key": "Content-Type",
+                                                                "value": "application/json"
+                                                            },
+                                                            {
+                                                                "key": "Accept",
+                                                                "value": "application/json"
+                                                            }
+                                                        ],
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "mode": "raw",
+                                                            "raw": "{\n  \"action\": \"confirm\",\n  \"expected_payment_id\": \"<uuid>\"\n}",
+                                                            "options": {
+                                                                "raw": {
+                                                                    "headerFamily": "json",
+                                                                    "language": "json"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "status": "OK",
+                                                    "code": 200,
+                                                    "header": [
+                                                        {
+                                                            "key": "Content-Type",
+                                                            "value": "application/json"
+                                                        }
+                                                    ],
+                                                    "body": "{\n  \"id\": \"<uuid>\",\n  \"state\": \"Rejected\",\n  \"amount_minor_units\": \"<integer>\",\n  \"currency\": \"<string>\",\n  \"reference\": \"<string>\",\n  \"version\": \"<integer>\",\n  \"history\": [\n    {\n      \"event_type\": \"<string>\",\n      \"occurred_at\": \"<dateTime>\",\n      \"actor\": {\n        \"type\": \"api_caller\",\n        \"id\": \"<string>\"\n      },\n      \"causation_id\": \"<uuid>\",\n      \"correlation_id\": \"<uuid>\",\n      \"payload\": {}\n    },\n    {\n      \"event_type\": \"<string>\",\n      \"occurred_at\": \"<dateTime>\",\n      \"actor\": {\n        \"type\": \"system\",\n        \"id\": \"<string>\"\n      },\n      \"causation_id\": \"<uuid>\",\n      \"correlation_id\": \"<uuid>\",\n      \"payload\": {}\n    }\n  ]\n}",
+                                                    "cookie": [],
+                                                    "_postman_previewlanguage": "json"
+                                                },
+                                                {
+                                                    "id": "659c93f3-42aa-4507-97e5-76d1e3f37cce",
+                                                    "name": "No aggregate exists for `{id}`.",
+                                                    "originalRequest": {
+                                                        "url": {
+                                                            "path": [
+                                                                "api",
+                                                                "transactions",
+                                                                ":id",
+                                                                "resolve"
+                                                            ],
+                                                            "host": [
+                                                                "{{baseUrl}}"
+                                                            ],
+                                                            "query": [],
+                                                            "variable": [
+                                                                {
+                                                                    "disabled": false,
+                                                                    "description": {
+                                                                        "content": "(Required) ",
+                                                                        "type": "text/plain"
+                                                                    },
+                                                                    "type": "any",
+                                                                    "value": "<uuid>",
+                                                                    "key": "id"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "header": [
+                                                            {
+                                                                "disabled": false,
+                                                                "description": {
+                                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                                    "type": "text/plain"
+                                                                },
+                                                                "key": "X-Actor-Id",
+                                                                "value": "unknown"
+                                                            },
+                                                            {
+                                                                "key": "Content-Type",
+                                                                "value": "application/json"
+                                                            },
+                                                            {
+                                                                "key": "Accept",
+                                                                "value": "application/json"
+                                                            }
+                                                        ],
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "mode": "raw",
+                                                            "raw": "{\n  \"action\": \"confirm\",\n  \"expected_payment_id\": \"<uuid>\"\n}",
+                                                            "options": {
+                                                                "raw": {
+                                                                    "headerFamily": "json",
+                                                                    "language": "json"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "status": "Not Found",
+                                                    "code": 404,
+                                                    "header": [
+                                                        {
+                                                            "key": "Content-Type",
+                                                            "value": "application/json"
+                                                        }
+                                                    ],
+                                                    "body": "{\n  \"message\": \"<string>\"\n}",
+                                                    "cookie": [],
+                                                    "_postman_previewlanguage": "json"
+                                                },
+                                                {
+                                                    "id": "668701ab-ed99-4c72-a291-029cad13aa9a",
+                                                    "name": "Transaction is not currently NeedsReview (illegal transition, or a concurrent resolution already happened — ADR-003).",
+                                                    "originalRequest": {
+                                                        "url": {
+                                                            "path": [
+                                                                "api",
+                                                                "transactions",
+                                                                ":id",
+                                                                "resolve"
+                                                            ],
+                                                            "host": [
+                                                                "{{baseUrl}}"
+                                                            ],
+                                                            "query": [],
+                                                            "variable": [
+                                                                {
+                                                                    "disabled": false,
+                                                                    "description": {
+                                                                        "content": "(Required) ",
+                                                                        "type": "text/plain"
+                                                                    },
+                                                                    "type": "any",
+                                                                    "value": "<uuid>",
+                                                                    "key": "id"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "header": [
+                                                            {
+                                                                "disabled": false,
+                                                                "description": {
+                                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                                    "type": "text/plain"
+                                                                },
+                                                                "key": "X-Actor-Id",
+                                                                "value": "unknown"
+                                                            },
+                                                            {
+                                                                "key": "Content-Type",
+                                                                "value": "application/json"
+                                                            },
+                                                            {
+                                                                "key": "Accept",
+                                                                "value": "application/json"
+                                                            }
+                                                        ],
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "mode": "raw",
+                                                            "raw": "{\n  \"action\": \"confirm\",\n  \"expected_payment_id\": \"<uuid>\"\n}",
+                                                            "options": {
+                                                                "raw": {
+                                                                    "headerFamily": "json",
+                                                                    "language": "json"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "status": "Conflict",
+                                                    "code": 409,
+                                                    "header": [
+                                                        {
+                                                            "key": "Content-Type",
+                                                            "value": "application/json"
+                                                        }
+                                                    ],
+                                                    "body": "{\n  \"current_state\": \"Pending\",\n  \"message\": \"<string>\"\n}",
+                                                    "cookie": [],
+                                                    "_postman_previewlanguage": "json"
+                                                },
+                                                {
+                                                    "id": "08f71ae2-1dab-4bc2-af6a-76d79c42b44f",
+                                                    "name": "`expected_payment_id` is not among the recorded candidates, or a `reject` action is missing its `reason`.",
+                                                    "originalRequest": {
+                                                        "url": {
+                                                            "path": [
+                                                                "api",
+                                                                "transactions",
+                                                                ":id",
+                                                                "resolve"
+                                                            ],
+                                                            "host": [
+                                                                "{{baseUrl}}"
+                                                            ],
+                                                            "query": [],
+                                                            "variable": [
+                                                                {
+                                                                    "disabled": false,
+                                                                    "description": {
+                                                                        "content": "(Required) ",
+                                                                        "type": "text/plain"
+                                                                    },
+                                                                    "type": "any",
+                                                                    "value": "<uuid>",
+                                                                    "key": "id"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "header": [
+                                                            {
+                                                                "disabled": false,
+                                                                "description": {
+                                                                    "content": "Self-declared caller identity, unvalidated (no auth in v1 — ADR-008). Defaults to \"unknown\" when omitted. Recorded as audit metadata only, not an authenticated principal.",
+                                                                    "type": "text/plain"
+                                                                },
+                                                                "key": "X-Actor-Id",
+                                                                "value": "unknown"
+                                                            },
+                                                            {
+                                                                "key": "Content-Type",
+                                                                "value": "application/json"
+                                                            },
+                                                            {
+                                                                "key": "Accept",
+                                                                "value": "application/json"
+                                                            }
+                                                        ],
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "mode": "raw",
+                                                            "raw": "{\n  \"action\": \"confirm\",\n  \"expected_payment_id\": \"<uuid>\"\n}",
+                                                            "options": {
+                                                                "raw": {
+                                                                    "headerFamily": "json",
+                                                                    "language": "json"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
+                                                    "code": 422,
+                                                    "header": [
+                                                        {
+                                                            "key": "Content-Type",
+                                                            "value": "application/json"
+                                                        }
+                                                    ],
+                                                    "body": "{\n  \"message\": \"<string>\"\n}",
+                                                    "cookie": [],
+                                                    "_postman_previewlanguage": "json"
+                                                }
+                                            ],
+                                            "event": [],
+                                            "protocolProfileBehavior": {
+                                                "disableBodyPruning": true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "event": [],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000"
+        }
+    ],
+    "info": {
+        "_postman_id": "e48b3826-326c-4845-b80c-6f3462c6518c",
+        "name": "Rekon Reconciliation API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": {
+            "content": "REST API for the Reconciliation module (the only implemented module). No authentication in v1 — see ADR-008. Every operation accepts an optional, unvalidated `X-Actor-Id` header used only as audit metadata.",
+            "type": "text/plain"
+        }
+    }
+}
