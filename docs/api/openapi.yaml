@@ -1,0 +1,360 @@
+openapi: 3.1.0
+info:
+  title: Rekon Reconciliation API
+  version: "1.0"
+  description: >-
+    REST API for the Reconciliation module (the only implemented module).
+    No authentication in v1 — see ADR-008. Every operation accepts an
+    optional, unvalidated `X-Actor-Id` header used only as audit metadata.
+servers:
+  - url: http://localhost:8000
+    description: Local docker compose stack (nginx on :8000)
+
+paths:
+  /api/imports:
+    post:
+      operationId: importStatement
+      summary: Import a CSV bank statement
+      description: >-
+        Processes the statement row by row, synchronously, within the
+        request. Rows that collide on an already-imported idempotency key
+        are reported as already imported, not as an error. Rows with bad
+        content are reported as invalid but do not fail the whole request.
+      parameters:
+        - $ref: '#/components/parameters/ActorId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    CSV file with columns
+                    reference,amount_minor_units,currency,statement_date
+                    (ADR-005).
+      responses:
+        '200':
+          description: Statement processed (possibly with zero new rows imported).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSummary'
+        '422':
+          description: The CSV file is structurally invalid (e.g. missing columns).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+
+  /api/transactions:
+    get:
+      operationId: listTransactions
+      summary: List transactions
+      parameters:
+        - $ref: '#/components/parameters/ActorId'
+        - name: state
+          in: query
+          required: false
+          description: Filter by transaction state. Omitted = all states.
+          schema:
+            $ref: '#/components/schemas/TransactionState'
+      responses:
+        '200':
+          description: Transactions matching the filter, ordered by import time.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransactionSummary'
+
+  /api/transactions/{id}:
+    get:
+      operationId: getTransaction
+      summary: Get a transaction's current state and full event history
+      description: >-
+        Doubles as the audit trail view: `history` is the full ordered
+        event stream for the aggregate.
+      parameters:
+        - $ref: '#/components/parameters/ActorId'
+        - $ref: '#/components/parameters/TransactionIdPath'
+      responses:
+        '200':
+          description: Transaction detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetail'
+        '404':
+          description: No aggregate exists for `{id}`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
+  /api/transactions/{id}/resolve:
+    post:
+      operationId: resolveTransaction
+      summary: Resolve a NeedsReview transaction
+      description: Only valid when the transaction is currently in NeedsReview.
+      parameters:
+        - $ref: '#/components/parameters/ActorId'
+        - $ref: '#/components/parameters/TransactionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ResolveConfirmRequest'
+                - $ref: '#/components/schemas/ResolveRejectRequest'
+              discriminator:
+                propertyName: action
+                mapping:
+                  confirm: '#/components/schemas/ResolveConfirmRequest'
+                  reject: '#/components/schemas/ResolveRejectRequest'
+      responses:
+        '200':
+          description: Transaction resolved; same shape as GET /transactions/{id}.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetail'
+        '404':
+          description: No aggregate exists for `{id}`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '409':
+          description: >-
+            Transaction is not currently NeedsReview (illegal transition,
+            or a concurrent resolution already happened — ADR-003).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '422':
+          description: >-
+            `expected_payment_id` is not among the recorded candidates, or
+            a `reject` action is missing its `reason`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
+components:
+  parameters:
+    ActorId:
+      name: X-Actor-Id
+      in: header
+      required: false
+      description: >-
+        Self-declared caller identity, unvalidated (no auth in v1 —
+        ADR-008). Defaults to "unknown" when omitted. Recorded as audit
+        metadata only, not an authenticated principal.
+      schema:
+        type: string
+        default: unknown
+    TransactionIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    TransactionState:
+      type: string
+      enum: [Pending, Matched, Unmatched, NeedsReview, Reconciled, Rejected]
+
+    ImportSummary:
+      type: object
+      required:
+        - correlation_id
+        - rows_received
+        - rows_imported
+        - rows_already_imported
+        - rows_invalid
+        - invalid_rows
+        - transaction_ids
+      properties:
+        correlation_id:
+          type: string
+          format: uuid
+          description: >-
+            The correlationId stamped on every event this import produced —
+            a usable audit handle grouping the whole import in the event
+            store.
+        rows_received:
+          type: integer
+        rows_imported:
+          type: integer
+        rows_already_imported:
+          type: integer
+          description: >-
+            Rows whose append collided on the event store's unique
+            constraint (ADR-006) — an idempotent no-op, not an error.
+        rows_invalid:
+          type: integer
+        invalid_rows:
+          type: array
+          items: {}
+          description: Per-row details for rows rejected for bad content.
+        transaction_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    TransactionSummary:
+      type: object
+      required:
+        - id
+        - state
+        - amount_minor_units
+        - currency
+        - reference
+        - statement_date
+        - imported_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/TransactionState'
+        amount_minor_units:
+          type: integer
+        currency:
+          type: string
+          example: EUR
+        reference:
+          type: string
+        statement_date:
+          type: string
+          format: date
+        imported_at:
+          type: string
+          format: date-time
+
+    Actor:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          type: string
+          enum: [system, api_caller]
+        id:
+          type: string
+          nullable: true
+
+    DomainEventEntry:
+      type: object
+      required:
+        - event_type
+        - occurred_at
+        - actor
+        - causation_id
+        - correlation_id
+        - payload
+      properties:
+        event_type:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/Actor'
+        causation_id:
+          type: string
+          format: uuid
+        correlation_id:
+          type: string
+          format: uuid
+        payload:
+          type: object
+          description: Event-specific fields; shape varies by event_type.
+
+    TransactionDetail:
+      type: object
+      required:
+        - id
+        - state
+        - amount_minor_units
+        - currency
+        - reference
+        - version
+        - history
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/TransactionState'
+        amount_minor_units:
+          type: integer
+        currency:
+          type: string
+        reference:
+          type: string
+        version:
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainEventEntry'
+
+    ResolveConfirmRequest:
+      type: object
+      required: [action, expected_payment_id]
+      properties:
+        action:
+          type: string
+          enum: [confirm]
+        expected_payment_id:
+          type: string
+          format: uuid
+
+    ResolveRejectRequest:
+      type: object
+      required: [action, reason]
+      properties:
+        action:
+          type: string
+          enum: [reject]
+        reason:
+          type: string
+
+    ErrorMessage:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    ConflictError:
+      allOf:
+        - $ref: '#/components/schemas/ErrorMessage'
+        - type: object
+          required: [current_state]
+          properties:
+            current_state:
+              $ref: '#/components/schemas/TransactionState'
+
+    ValidationErrors:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items: {}
