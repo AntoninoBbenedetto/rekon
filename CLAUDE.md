@@ -30,6 +30,7 @@ questi gira automaticamente).
 - `database/migrations/` — tabelle `event_store` (append-only, fonte di verità), `transactions_read_model` (proiezione disponibile, ricostruibile), `expected_payments`.
 - `tests/{Unit,Feature}/Modules/{SharedKernel,Reconciliation}/` — rispecchia 1:1 la struttura di `app/`. I test feature usano `RefreshDatabase` e Pest; i test end-to-end colpiscono le route reali via `postJson`/`getJson`.
 - `docs/adr/`, `docs/failures/`, `docs/architecture/`, `docs/superpowers/specs/` — decisioni, modalità di guasto e spec normative. Ogni doc esiste in EN e in IT (suffisso `_it`): se tocchi uno di questi file, aggiorna anche la controparte nell'altra lingua.
+- `docs/api/openapi.yaml` — contratto OpenAPI dei 4 endpoint REST, scritto e mantenuto a mano (nessuna generazione automatica): se cambi una request/response nei controller di `Reconciliation/Infrastructure/Http`, aggiorna anche questo file.
 
 ## Convenzioni da rispettare quando scrivi codice qui
 

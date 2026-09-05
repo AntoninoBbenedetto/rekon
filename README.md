@@ -82,6 +82,8 @@ Reference material:
   [component](docs/architecture/c4-component.md)).
 - [docs/superpowers/specs/2026-08-01-reconciliation-core-slice-technical-design.md](docs/superpowers/specs/2026-08-01-reconciliation-core-slice-technical-design.md)
   — DB schema, event payloads, API contracts.
+- [docs/api/openapi.yaml](docs/api/openapi.yaml) — the OpenAPI contract for
+  the 4 REST endpoints, hand-written and versioned alongside the code.
 - [docs/glossary.md](docs/glossary.md) — the vocabulary, as used *here*.
 - [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — the same context written for AI
   coding assistants.
