@@ -6,7 +6,7 @@ namespace App\Modules\Reconciliation\Application;
 
 use App\Modules\Reconciliation\Domain\Transaction;
 use App\Modules\Reconciliation\Infrastructure\CsvStatementParser;
-use App\Modules\Reconciliation\Infrastructure\MatchPendingTransactionJob;
+use App\Modules\Reconciliation\Infrastructure\Outbox\OutboxWriter;
 use App\Modules\Reconciliation\Infrastructure\StatementRowValidator;
 use App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector;
 use App\Modules\SharedKernel\Domain\Actor;
@@ -14,6 +14,7 @@ use App\Modules\SharedKernel\Domain\Exceptions\ConcurrencyConflictException;
 use App\Modules\SharedKernel\Domain\IdempotencyKey;
 use App\Modules\SharedKernel\Domain\Money;
 use App\Modules\SharedKernel\Domain\TransactionId;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class ImportStatementService
@@ -23,6 +24,7 @@ final class ImportStatementService
         private readonly StatementRowValidator $rowValidator,
         private readonly TransactionRepository $repository,
         private readonly TransactionReadModelProjector $projector,
+        private readonly OutboxWriter $outbox,
     ) {}
 
     public function import(string $csvContents, Actor $actor, string $correlationId): ImportSummary
@@ -83,7 +85,15 @@ final class ImportStatementService
                 );
 
                 try {
-                    $this->repository->save($transaction);
+                    DB::transaction(function () use ($transaction, $correlationId) {
+                        $this->repository->save($transaction);
+                        $this->projector->project($transaction);
+                        $this->outbox->publish(
+                            'match_pending_transaction',
+                            ['transaction_id' => $transaction->aggregateId()],
+                            $correlationId,
+                        );
+                    });
                 } catch (ConcurrencyConflictException) {
                     $alreadyImportedCount++;
 
@@ -95,10 +105,7 @@ final class ImportStatementService
                     continue;
                 }
 
-                $this->projector->project($transaction);
                 $importedIds[] = $transactionId->value;
-
-                MatchPendingTransactionJob::dispatch($transactionId->value, $correlationId);
             }
         }
 
