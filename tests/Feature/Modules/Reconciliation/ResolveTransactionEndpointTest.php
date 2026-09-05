@@ -4,6 +4,7 @@ use App\Modules\Reconciliation\Application\ImportStatementService;
 use App\Modules\Reconciliation\Domain\ExpectedPayment;
 use App\Modules\SharedKernel\Domain\Actor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 
 uses(RefreshDatabase::class);
 
@@ -16,7 +17,11 @@ function importAndReturnNeedsReviewId(): string
     $summary = app(ImportStatementService::class)->import($csv, Actor::system(), (string) Str::uuid());
     $id = $summary->transactionIds[0];
 
-    // Il job di matching gira sync in test (QUEUE_CONNECTION=sync in .env.testing).
+    // ADR-009: il matching parte solo dopo il relay dell'outbox, non più in sincrono
+    // con l'import. QUEUE_CONNECTION=sync in .env.testing fa sì che il job giri inline
+    // non appena il relay lo dispatcha.
+    Artisan::call('reconciliation:relay-outbox');
+
     return $id;
 }
 
@@ -84,6 +89,7 @@ it('returns 409 when the transaction is not currently NeedsReview', function () 
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-NOMATCH,12345,EUR,2026-07-31";
     $summary = app(ImportStatementService::class)->import($csv, Actor::system(), (string) Str::uuid());
     $id = $summary->transactionIds[0]; // Unmatched, non NeedsReview
+    Artisan::call('reconciliation:relay-outbox');
 
     $response = $this->postJson("/api/transactions/{$id}/resolve", [
         'action' => 'reject',

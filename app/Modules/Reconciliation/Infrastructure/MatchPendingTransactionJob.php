@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -66,8 +67,10 @@ final class MatchPendingTransactionJob implements ShouldQueue
 
         $matcher->match($transaction, Actor::system(), (string) Str::uuid(), $this->correlationId);
 
-        $repository->save($transaction);
-        $projector->project($transaction);
+        DB::transaction(function () use ($repository, $transaction, $projector) {
+            $repository->save($transaction);
+            $projector->project($transaction);
+        });
     }
 
     /**

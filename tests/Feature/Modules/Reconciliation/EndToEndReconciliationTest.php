@@ -22,7 +22,11 @@ it('reconciles a transaction end-to-end through the API on an exact match', func
     $import = $this->postJson('/api/imports', ['file' => $file])->assertOk();
     $id = $import->json('transaction_ids.0');
 
-    // QUEUE_CONNECTION=sync in .env.testing: il job di matching è già eseguito.
+    // ADR-009: il matching non parte più in sincrono col dispatch dall'import — l'outbox
+    // porta l'intenzione, il relay la trasforma in job. QUEUE_CONNECTION=sync in .env.testing
+    // fa sì che il relay esegua il job inline non appena lo dispatcha.
+    $this->artisan('reconciliation:relay-outbox');
+
     $this->getJson("/api/transactions/{$id}")
         ->assertOk()
         ->assertJsonPath('state', 'Reconciled')
@@ -36,6 +40,8 @@ it('resolves a transaction end-to-end through the API when review is needed', fu
     $file = UploadedFile::fake()->createWithContent('statement.csv', "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31");
     $import = $this->postJson('/api/imports', ['file' => $file])->assertOk();
     $id = $import->json('transaction_ids.0');
+
+    $this->artisan('reconciliation:relay-outbox');
 
     $this->getJson("/api/transactions/{$id}")->assertJsonPath('state', 'NeedsReview');
 
@@ -55,6 +61,8 @@ it('leaves an Unmatched transaction Unmatched end-to-end', function () {
     $import = $this->postJson('/api/imports', ['file' => $file])->assertOk();
     $id = $import->json('transaction_ids.0');
 
+    $this->artisan('reconciliation:relay-outbox');
+
     $this->getJson("/api/transactions/{$id}")->assertJsonPath('state', 'Unmatched');
 });
 
@@ -65,6 +73,8 @@ it('rejects the loser of two concurrent resolutions with a ConcurrencyConflictEx
     $file = UploadedFile::fake()->createWithContent('statement.csv', "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31");
     $import = $this->postJson('/api/imports', ['file' => $file])->assertOk();
     $id = $import->json('transaction_ids.0');
+
+    $this->artisan('reconciliation:relay-outbox');
 
     // Il matching per REF-1 con due candidati esatti produce NeedsReview (multiple_candidates, spec §6.2).
     $transactionId = TransactionId::fromString($id);
@@ -151,6 +161,10 @@ it('collapses two real, concurrent OS-process imports of identical statement con
         expect(DB::table('event_store')->where('aggregate_id', $transactionId)->where('version', 1)->count())->toBe(1)
             ->and(DB::table('transactions_read_model')->where('reference', $reference)->count())->toBe(1);
     } finally {
+        // ADR-009: l'import ora scrive anche una riga outbox nella stessa transazione reale
+        // dei due sottoprocessi — va ripulita qui per lo stesso motivo delle altre due righe:
+        // commit reale su connessione figlia, invisibile al rollback di RefreshDatabase del padre.
+        $rawConnection->prepare("delete from outbox where payload->>'transaction_id' = ?")->execute([$transactionId]);
         $rawConnection->prepare('delete from event_store where aggregate_id = ?')->execute([$transactionId]);
         $rawConnection->prepare('delete from transactions_read_model where reference = ?')->execute([$reference]);
     }

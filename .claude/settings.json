@@ -4,7 +4,8 @@
       "Bash(awk -F: '{s+=$2; print} END {print \"TOTALE CASI:\", s}')",
       "Bash(docker compose exec -T app php artisan tinker '--execute= *)",
       "Bash(perl -pi -e \"s/Matching permanently failed; transaction left Pending\\\\./MUTATED MESSAGE./\" app/Modules/Reconciliation/Infrastructure/MatchPendingTransactionJob.php)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
