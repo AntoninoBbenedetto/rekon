@@ -5,7 +5,9 @@
       "Bash(docker compose exec -T app php artisan tinker '--execute= *)",
       "Bash(perl -pi -e \"s/Matching permanently failed; transaction left Pending\\\\./MUTATED MESSAGE./\" app/Modules/Reconciliation/Infrastructure/MatchPendingTransactionJob.php)",
       "Bash(docker compose *)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(curl -s http://localhost:8000/api/transactions/9abb51aa-5f20-517a-8d7e-d242fcd26f4a)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

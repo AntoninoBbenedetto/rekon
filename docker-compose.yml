@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: rekon_app
+    restart: unless-stopped
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
@@ -14,9 +15,24 @@ services:
       - rekon
     tty: true
 
+  nginx:
+    image: nginx:alpine
+    container_name: rekon_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - rekon
+
   postgres:
     image: postgres:16
     container_name: rekon_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: rekon
       POSTGRES_PASSWORD: rekon
@@ -30,6 +46,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: rekon_redis
+    restart: unless-stopped
     networks:
       - rekon
 

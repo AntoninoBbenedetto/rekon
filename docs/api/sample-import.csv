@@ -1,0 +1,5 @@
+reference,amount_minor_units,currency,statement_date
+REF-SAMPLE-1,150000,EUR,2026-09-01
+REF-SAMPLE-2,5000,USD,2026-09-02
+REF-SAMPLE-3,25000,EUR,2026-09-03
+REF-SAMPLE-4,not-a-number,EUR,2026-09-04
