@@ -5,7 +5,7 @@ use App\Modules\Reconciliation\Application\TransactionRepository;
 use App\Modules\Reconciliation\Domain\Events\TransactionEventTypes;
 use App\Modules\Reconciliation\Infrastructure\CsvStatementParser;
 use App\Modules\Reconciliation\Infrastructure\MalformedStatementException;
-use App\Modules\Reconciliation\Infrastructure\MatchPendingTransactionJob;
+use App\Modules\Reconciliation\Infrastructure\Outbox\OutboxWriter;
 use App\Modules\Reconciliation\Infrastructure\Persistence\TransactionProjection;
 use App\Modules\Reconciliation\Infrastructure\StatementRowValidator;
 use App\Modules\Reconciliation\Infrastructure\TransactionReadModelProjector;
@@ -13,7 +13,7 @@ use App\Modules\SharedKernel\Domain\Actor;
 use App\Modules\SharedKernel\Domain\TransactionId;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -24,7 +24,17 @@ function importService(): ImportStatementService
         new StatementRowValidator,
         new TransactionRepository(new PostgresEventStore(TransactionEventTypes::map())),
         new TransactionReadModelProjector,
+        new OutboxWriter,
     );
+}
+
+function outboxTransactionIds(): array
+{
+    return DB::table('outbox')
+        ->where('message_type', 'match_pending_transaction')
+        ->pluck('payload')
+        ->map(fn (string $payload) => json_decode($payload, true)['transaction_id'])
+        ->all();
 }
 
 const VALID_STATEMENT_CSV = <<<'CSV'
@@ -33,9 +43,7 @@ REF-1,12345,EUR,2026-07-31
 REF-2,500,EUR,2026-07-31
 CSV;
 
-it('imports every valid row and dispatches a matching job for each', function () {
-    Queue::fake();
-
+it('imports every valid row and writes an outbox message for each', function () {
     $summary = importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
 
     expect($summary->rowsReceived)->toBe(2)
@@ -44,21 +52,19 @@ it('imports every valid row and dispatches a matching job for each', function ()
         ->and($summary->rowsInvalid)->toBe(0)
         ->and($summary->transactionIds)->toHaveCount(2);
 
-    Queue::assertPushed(MatchPendingTransactionJob::class, 2);
+    expect(outboxTransactionIds())->toEqualCanonicalizing($summary->transactionIds);
 });
 
-it('is idempotent: re-importing the same statement imports nothing new', function () {
-    Queue::fake();
-
+it('is idempotent: re-importing the same statement imports nothing new and writes no new outbox rows', function () {
     importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
     $second = importService()->import(VALID_STATEMENT_CSV, Actor::apiCaller('caller-1'), (string) Str::uuid());
 
     expect($second->rowsImported)->toBe(0)
-        ->and($second->rowsAlreadyImported)->toBe(2);
+        ->and($second->rowsAlreadyImported)->toBe(2)
+        ->and(DB::table('outbox')->count())->toBe(2);
 });
 
 it('imports two genuinely identical rows as two distinct transactions, and a resubmission of both as a no-op', function () {
-    Queue::fake();
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31\nREF-1,12345,EUR,2026-07-31";
 
     $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
@@ -68,11 +74,11 @@ it('imports two genuinely identical rows as two distinct transactions, and a res
 
     $resubmitted = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
     expect($resubmitted->rowsImported)->toBe(0)
-        ->and($resubmitted->rowsAlreadyImported)->toBe(2);
+        ->and($resubmitted->rowsAlreadyImported)->toBe(2)
+        ->and(DB::table('outbox')->count())->toBe(2);
 });
 
 it('reports content-invalid rows without failing the rest of the import', function () {
-    Queue::fake();
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31\nREF-2,not-a-number,EUR,2026-07-31";
 
     $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());
@@ -83,7 +89,6 @@ it('reports content-invalid rows without failing the rest of the import', functi
 });
 
 it('re-projects the transaction current state on an idempotent re-import', function () {
-    Queue::fake();
     $csv = "reference,amount_minor_units,currency,statement_date\nREF-1,12345,EUR,2026-07-31";
 
     $summary = importService()->import($csv, Actor::apiCaller('caller-1'), (string) Str::uuid());

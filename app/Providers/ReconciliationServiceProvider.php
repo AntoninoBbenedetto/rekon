@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Modules\Reconciliation\Domain\Events\TransactionEventTypes;
+use App\Modules\Reconciliation\Infrastructure\Console\RebuildProjectionCommand;
+use App\Modules\Reconciliation\Infrastructure\Console\RelayOutboxCommand;
 use App\Modules\SharedKernel\Application\EventStore;
 use App\Modules\SharedKernel\Infrastructure\EventStore\PostgresEventStore;
 use Illuminate\Support\ServiceProvider;
@@ -16,5 +18,15 @@ final class ReconciliationServiceProvider extends ServiceProvider
         $this->app->singleton(EventStore::class, function () {
             return new PostgresEventStore(TransactionEventTypes::map());
         });
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                RelayOutboxCommand::class,
+                RebuildProjectionCommand::class,
+            ]);
+        }
     }
 }
