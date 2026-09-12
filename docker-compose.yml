@@ -15,6 +15,38 @@ services:
       - rekon
     tty: true
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rekon_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - rekon
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rekon_queue_worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - rekon
+    command: php artisan queue:work redis --tries=5 --backoff=5,15,60,180 --sleep=3
+
   nginx:
     image: nginx:alpine
     container_name: rekon_nginx
